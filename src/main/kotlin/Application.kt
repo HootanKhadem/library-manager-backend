@@ -1,5 +1,6 @@
 package com.dw
 
+import com.dw.plugins.configureContentNegotiation
 import com.dw.plugins.configureHTTP
 import com.dw.plugins.configureRouting
 import io.ktor.server.application.*
@@ -11,4 +12,5 @@ fun main(args: Array<String>) {
 fun Application.module() {
     configureHTTP()
     configureRouting()
+    configureContentNegotiation()
 }
