@@ -4,3 +4,9 @@ ktor:
       - com.dw.ApplicationKt.module
   deployment:
     port: 8080
+  jwt:
+    secret: "secret"
+    issuer: "issuer"
+    audience: "**"
+    realm: "access to the library"
+    signatureAlgorithm: "HS256"

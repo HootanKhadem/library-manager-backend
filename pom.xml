@@ -23,7 +23,7 @@
         <dependency>
             <groupId>org.openfolder</groupId>
             <artifactId>kotlin-asyncapi-ktor</artifactId>
-            <version>3.2.0</version>
+            <version>3.2.1</version>
         </dependency>
         <dependency>
             <groupId>io.ktor</groupId>
@@ -68,6 +68,21 @@
         </dependency>
         <dependency>
             <groupId>io.ktor</groupId>
+            <artifactId>ktor-server-auth-jvm</artifactId>
+            <version>${ktor_version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-server-auth-jwt-jvm</artifactId>
+            <version>${ktor_version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-server-swagger-jvm</artifactId>
+            <version>${ktor_version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.ktor</groupId>
             <artifactId>ktor-server-test-host-jvm</artifactId>
             <version>${ktor_version}</version>
             <scope>test</scope>
@@ -83,24 +98,6 @@
             <artifactId>kotlinx-coroutines-debug</artifactId>
             <version>1.6.4</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.ktor</groupId>
-            <artifactId>ktor-server-content-negotiation</artifactId>
-            <version>3.4.1</version>
-            <scope>implementation</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.ktor</groupId>
-            <artifactId>ktor-server-core</artifactId>
-            <version>3.4.1</version>
-            <scope>implementation</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.ktor</groupId>
-            <artifactId>ktor-server-core</artifactId>
-            <version>3.4.1</version>
-            <scope>implementation</scope>
         </dependency>
         <dependency>
             <groupId>io.ktor</groupId>

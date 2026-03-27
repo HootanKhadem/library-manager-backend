@@ -1,5 +1,6 @@
 package com.dw.model
 
+
 data class User(
     private val name: String,
     private val email: String,
