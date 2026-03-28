@@ -1,5 +1,8 @@
 package com.dw.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Book(
     private val name: String,
     private val author: Author,
