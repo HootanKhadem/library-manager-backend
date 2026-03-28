@@ -6,8 +6,8 @@ import io.ktor.server.application.*
 
 fun Application.configureHTTP() {
     install(AsyncApiPlugin) {
-        extension = AsyncApiExtension.builder {
-            info {
+        AsyncApiExtension.builder {
+        info {
                 title("Sample API")
                 version("1.0.0")
             }
