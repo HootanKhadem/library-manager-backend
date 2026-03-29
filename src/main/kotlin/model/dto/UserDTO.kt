@@ -1,4 +1,4 @@
-package com.dw.model
+package com.dw.model.dto
 
 import kotlinx.serialization.Serializable
 
@@ -9,7 +9,7 @@ enum class Role {
 }
 
 @Serializable
-data class User(
+data class UserDTO(
      val id: Long? = null,
      val name: String,
      val email: String,
