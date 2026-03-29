@@ -140,19 +140,16 @@
             <groupId>org.jetbrains.exposed</groupId>
             <artifactId>exposed-core</artifactId>
             <version>${exposed_version}</version>
-            <scope>implementation</scope>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.exposed</groupId>
             <artifactId>exposed-jdbc</artifactId>
             <version>${exposed_version}</version>
-            <scope>implementation</scope>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.exposed</groupId>
             <artifactId>exposed-dao</artifactId>
             <version>${exposed_version}</version>
-            <scope>runtime</scope>
         </dependency>
 
     </dependencies>
