@@ -12,11 +12,17 @@ class PSQLUserRepository : UserRepository {
         withTransaction { UserDAO.find { UserTable.username eq username }.firstOrNull()?.toUserDto() }
 
 
-    override suspend fun save(userDTO: UserDTO): UserDTO {
-        TODO("Not yet implemented")
+    override suspend fun save(userDTO: UserDTO): UserDTO = withTransaction {
+        UserDAO.new {
+            updateFromDto(userDTO)
+            salt = "" // Stub for now
+        }.toUserDto()
     }
 
-    override suspend fun update(userDTO: UserDTO): UserDTO {
-        TODO("Not yet implemented")
+    override suspend fun update(userDTO: UserDTO): UserDTO = withTransaction {
+        val user = UserDAO.findById(userDTO.id ?: throw IllegalArgumentException("User ID is required for update"))
+            ?: throw NoSuchElementException("User not found with ID ${userDTO.id}")
+        user.updateFromDto(userDTO)
+        user.toUserDto()
     }
 }

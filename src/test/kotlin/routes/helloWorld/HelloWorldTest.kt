@@ -1,3 +1,6 @@
+package routes.helloWorld
+
+import com.dw.plugins.configureDependencyInjection
 import com.dw.plugins.configureRouting
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -10,6 +13,7 @@ class HelloWorldTest {
     @Test
     fun testRoot() = testApplication {
         application {
+            configureDependencyInjection()
             configureRouting()
         }
         val response = client.get("/")
