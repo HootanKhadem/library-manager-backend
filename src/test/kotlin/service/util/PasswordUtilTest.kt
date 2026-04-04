@@ -10,8 +10,6 @@ import kotlin.test.assertTrue
 
 class PasswordUtilTest {
 
-    private val passwordUtil = PasswordUtil()
-
     @Test
     fun `test md5 hash for empty string`() {
         val input = ""
