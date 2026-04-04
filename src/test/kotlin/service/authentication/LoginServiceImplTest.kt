@@ -2,13 +2,14 @@ package service.authentication
 
 import TestDatabase
 import com.dw.UserNotFoundException
+import com.dw.db.postgres.user.PSQLUserRepository
+import com.dw.model.dto.Role
+import com.dw.model.dto.UserDTO
 import com.dw.service.authentication.LoginServiceImpl
+import com.dw.service.util.PasswordUtil
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertThrows
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
+import kotlin.test.*
 
 /**
  * LoginServiceImplTest has been updated to use DatabaseContainer for common test setup.
@@ -17,10 +18,16 @@ import kotlin.test.assertNotNull
 class LoginServiceImplTest {
 
     private val loginService = LoginServiceImpl()
+    private val userRepository = PSQLUserRepository()
 
     @BeforeTest
     fun setup() {
         TestDatabase.init()
+    }
+
+    @AfterTest
+    fun tearDown() {
+        TestDatabase.tearDown()
     }
 
     @Test
@@ -31,6 +38,16 @@ class LoginServiceImplTest {
 
         val username = "testuser"
         val password = "password"
+        val salt = PasswordUtil.generateSalt()
+        userRepository.save(
+            UserDTO(
+                name = username,
+                email = "test@example.com",
+                password = PasswordUtil.hashWithSalt(password, salt),
+                salt = salt,
+                role = Role.USER
+            )
+        )
 
         val token = loginService.login(username, password)
 
@@ -39,17 +56,30 @@ class LoginServiceImplTest {
     }
 
     @Test
-    fun `non-existing user login should fail test`() {
+    fun `non-existing user login should fail test`(): Unit = runBlocking {
         val username = "non-existing-user"
         val password = "password"
-        assertThrows(UserNotFoundException::class.java) { loginService.login(username, password) }
+        assertThrows(UserNotFoundException::class.java) { 
+            runBlocking { loginService.login(username, password) } 
+        }
     }
 
-//    @Test
-//    fun `valid login with incorrect credentials`() {
-//        val username = "testuser"
-//        val password = "wrongpassword"
-//
-//        assertThrows(UserNotFoundException::class.java) { loginService.login(username, password) }
-//    }
+    @Test
+    fun `valid login with incorrect credentials`(): Unit = runBlocking {
+        val username = "testuser"
+        val password = "wrongpassword"
+        val salt = PasswordUtil.generateSalt()
+        userRepository.save(
+            UserDTO(
+                name = username,
+                email = "test@example.com",
+                password = PasswordUtil.hashWithSalt("password", salt),
+                salt = salt,
+                role = Role.USER
+            )
+        )
+        assertThrows(UserNotFoundException::class.java) {
+            runBlocking { loginService.login(username, password) }
+        }
+    }
 }

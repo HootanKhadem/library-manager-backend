@@ -9,7 +9,7 @@ import org.jetbrains.exposed.v1.dao.LongEntityClass
 
 object UserTable : LongIdTable("user") {
     val username = varchar("username", 255)
-    val password = varchar("", 255)
+    val password = varchar("password", 255)
     val email = varchar("email", 255)
     val role = varchar("role", 255)
     val salt = varchar("salt", 255)
@@ -28,6 +28,7 @@ class UserDAO(id: EntityID<Long>) : LongEntity(id) {
         name = username,
         email = email,
         password = password,
+        salt = salt,
         role = Role.valueOf(role)
     )
 
@@ -36,5 +37,6 @@ class UserDAO(id: EntityID<Long>) : LongEntity(id) {
         this.email = dto.email
         this.password = dto.password
         this.role = dto.role.name
+        this.salt = dto.salt ?: ""
     }
 }

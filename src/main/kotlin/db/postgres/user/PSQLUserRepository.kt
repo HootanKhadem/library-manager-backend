@@ -15,7 +15,6 @@ class PSQLUserRepository : UserRepository {
     override suspend fun save(userDTO: UserDTO): UserDTO = withTransaction {
         UserDAO.new {
             updateFromDto(userDTO)
-            salt = "" // Stub for now
         }.toUserDto()
     }
 

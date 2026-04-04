@@ -5,10 +5,7 @@ import com.dw.db.postgres.user.PSQLUserRepository
 import com.dw.model.dto.Role
 import com.dw.model.dto.UserDTO
 import kotlinx.coroutines.runBlocking
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
+import kotlin.test.*
 
 /**
  * UserDAOTest has been updated to use H2 in-memory database.
@@ -30,10 +27,15 @@ class UserDAOTest {
         TestDatabase.init()
     }
 
+    @AfterTest
+    fun tearDown() {
+        TestDatabase.tearDown()
+    }
+
     @Test
     fun testMockUserRepo() = runBlocking {
         val username = "testuser"
-        userRepository.save(UserDTO(null, username, "test@mail.com", "password", Role.USER))
+        userRepository.save(UserDTO(id = null, name = username, email = "test@mail.com", password = "password", role = Role.USER))
 
         val user = userRepository.findByUsername(username)
 
@@ -50,7 +52,7 @@ class UserDAOTest {
 
     @Test
     fun testMockUserRepoSave() = runBlocking {
-        val dto = UserDTO(null, "newuser", "new@mail.com", "pass", Role.ADMIN)
+        val dto = UserDTO(id = null, name = "newuser", email = "new@mail.com", password = "pass", role = Role.ADMIN)
         val saved = userRepository.save(dto)
 
         assertNotNull(saved.id)
@@ -60,8 +62,8 @@ class UserDAOTest {
 
     @Test
     fun testMockUserRepoUpdate() = runBlocking {
-        val saved = userRepository.save(UserDTO(null, "u", "m", "p", Role.USER))
-        val dto = UserDTO(saved.id, "updated", "u@mail.com", "pass", Role.ADMIN)
+        val saved = userRepository.save(UserDTO(id = null, name = "u", email = "m", password = "p", role = Role.USER))
+        val dto = UserDTO(id = saved.id, name = "updated", email = "u@mail.com", password = "pass", role = Role.ADMIN, salt = "")
         val updated = userRepository.update(dto)
 
         assertEquals(dto, updated)

@@ -16,17 +16,17 @@ object TestDatabase {
     init {
         // Initialize the connection only once for the entire JVM lifetime
         Database.connect("jdbc:h2:mem:test_user_dao;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver")
-        
-        // Create the schema
+    }
+
+    fun init() {
         transaction {
             SchemaUtils.create(UserTable)
         }
     }
 
-    /**
-     * Calling this method ensures the 'init' block has been executed.
-     */
-    fun init() {
-        // Empty by design
+    fun tearDown() {
+        transaction {
+            SchemaUtils.drop(UserTable)
+        }
     }
 }
