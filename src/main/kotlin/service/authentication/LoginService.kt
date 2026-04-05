@@ -9,7 +9,10 @@ interface LoginServiceInterface {
     suspend fun login(username: String, password: String): String
 }
 
-class LoginServiceImpl(private val userRepository: UserRepository = PSQLUserRepository()) : LoginServiceInterface {
+class LoginServiceImpl(
+    private val userRepository: UserRepository = PSQLUserRepository(),
+    private val jwtService: JwtService
+) : LoginServiceInterface {
 
     override suspend fun login(username: String, password: String): String {
         val user = userRepository.findByUsername(username)
@@ -19,6 +22,6 @@ class LoginServiceImpl(private val userRepository: UserRepository = PSQLUserRepo
             throw UserNotFoundException("Invalid credentials") // Reusing for now as per the test's expectation
         }
 
-        return "token"
+        return jwtService.generateToken(user)
     }
 }

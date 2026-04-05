@@ -5,6 +5,8 @@ import com.dw.UserNotFoundException
 import com.dw.db.postgres.user.PSQLUserRepository
 import com.dw.model.dto.Role
 import com.dw.model.dto.UserDTO
+import com.dw.plugins.JwtConfig
+import com.dw.service.authentication.JwtService
 import com.dw.service.authentication.LoginServiceImpl
 import com.dw.service.util.PasswordUtil
 import kotlinx.coroutines.runBlocking
@@ -17,7 +19,9 @@ import kotlin.test.*
  */
 class LoginServiceImplTest {
 
-    private val loginService = LoginServiceImpl()
+    private val jwtService = JwtService(JwtConfig("test-secret", "test-issuer",
+        "test-audience", "test-realm"))
+    private val loginService = LoginServiceImpl(jwtService = jwtService)
     private val userRepository = PSQLUserRepository()
 
     @BeforeTest
@@ -52,7 +56,7 @@ class LoginServiceImplTest {
         val token = loginService.login(username, password)
 
         assertNotNull(token, "Login should return a token")
-        assertEquals("token", token, "For now, the stub should return 'token'")
+        assertNotEquals("token", token, "the result should not be hardcoded")
     }
 
     @Test
