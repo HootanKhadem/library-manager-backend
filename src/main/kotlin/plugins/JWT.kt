@@ -19,7 +19,12 @@ fun Application.configureJWT() {
                     .build()
             }
             validate {
-                JWTPrincipal(it.payload)
+                val email = it.payload.getClaim("email").asString()
+                if (!email.isNullOrEmpty()) {
+                    JWTPrincipal(it.payload)
+                } else {
+                    null
+                }
             }
         }
     }
