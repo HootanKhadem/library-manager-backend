@@ -1,9 +1,9 @@
 package com.dw.db
 
-import com.dw.model.User
+import com.dw.model.dto.UserDTO
 
 interface UserRepository {
-    fun findByUsername(username: String): User?
-    fun save(user: User): User
-    fun update(user: User): User
+    suspend fun findByUsername(username: String): UserDTO?
+    suspend fun save(userDTO: UserDTO): UserDTO
+    suspend fun update(userDTO: UserDTO): UserDTO
 }

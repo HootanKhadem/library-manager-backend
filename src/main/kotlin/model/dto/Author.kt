@@ -1,4 +1,4 @@
-package com.dw.model
+package com.dw.model.dto
 
 import kotlinx.serialization.Serializable
 

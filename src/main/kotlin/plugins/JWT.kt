@@ -7,17 +7,24 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 
 fun Application.configureJWT() {
-    val secret = environment.config.property("ktor.jwt.secret").getString()
-    val issuer = environment.config.property("ktor.jwt.issuer").getString()
-    val audience = environment.config.property("ktor.jwt.audience").getString()
-    val myRealm = environment.config.property("ktor.jwt.realm").getString()
+    val jwtConfig = getJwtConfig()
 
     install(Authentication) {
         jwt("auth-jwt") {
-            realm = myRealm
-            verifier { JWT.require(Algorithm.HMAC256(secret)).withIssuer(issuer).withAudience(audience).build() }
+            realm = jwtConfig.realm
+            verifier {
+                JWT.require(Algorithm.HMAC256(jwtConfig.secret))
+                    .withIssuer(jwtConfig.issuer)
+                    .withAudience(jwtConfig.audience)
+                    .build()
+            }
             validate {
-                JWTPrincipal(it.payload)
+                val email = it.payload.getClaim("email").asString()
+                if (!email.isNullOrEmpty()) {
+                    JWTPrincipal(it.payload)
+                } else {
+                    null
+                }
             }
         }
     }
