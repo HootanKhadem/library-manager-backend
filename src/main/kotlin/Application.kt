@@ -16,7 +16,9 @@ suspend fun Application.module() {
     initialUserMigration()
 
 
-    configureRouting()
+    configurePublicRouting()
+    configureAuthenticatedRouting()
+    configureAdminRouting()
     configureContentNegotiation()
     configureJWT()
 }

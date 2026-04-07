@@ -48,6 +48,7 @@ class JwtServiceTest {
         assertEquals(config.issuer, decodedJWT.issuer)
         assertEquals(config.audience, decodedJWT.audience[0])
         assertEquals("test@example.com", decodedJWT.getClaim("email").asString())
+        assertEquals(user.role.name, decodedJWT.getClaim("role").asString())
         assertTrue(decodedJWT.expiresAt.after(Date()))
         assertTrue(decodedJWT.expiresAt.before(Date(System.currentTimeMillis() + 3600001)))
     }

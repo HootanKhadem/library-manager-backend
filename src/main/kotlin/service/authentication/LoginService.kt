@@ -2,7 +2,6 @@ package com.dw.service.authentication
 
 import com.dw.UserNotFoundException
 import com.dw.db.UserRepository
-import com.dw.db.postgres.user.PSQLUserRepository
 import com.dw.service.util.PasswordUtil
 
 interface LoginServiceInterface {
@@ -10,7 +9,7 @@ interface LoginServiceInterface {
 }
 
 class LoginServiceImpl(
-    private val userRepository: UserRepository = PSQLUserRepository(),
+    private val userRepository: UserRepository,
     private val jwtService: JwtService
 ) : LoginServiceInterface {
 

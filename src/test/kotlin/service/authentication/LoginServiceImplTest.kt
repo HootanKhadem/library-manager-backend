@@ -1,15 +1,18 @@
 package service.authentication
 
-import TestDatabase
 import com.dw.UserNotFoundException
 import com.dw.db.postgres.user.PSQLUserRepository
 import com.dw.model.dto.Role
 import com.dw.model.dto.UserDTO
 import com.dw.plugins.JwtConfig
+import com.dw.plugins.configureDatabases
 import com.dw.service.authentication.JwtService
 import com.dw.service.authentication.LoginServiceImpl
 import com.dw.service.util.PasswordUtil
+import io.ktor.server.config.*
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.Assert.assertThrows
 import kotlin.test.*
 
@@ -19,19 +22,28 @@ import kotlin.test.*
  */
 class LoginServiceImplTest {
 
+    private val testConfig = MapApplicationConfig(
+        "ktor.psql-database.url" to "jdbc:h2:mem:login_service_test;DB_CLOSE_DELAY=-1",
+        "ktor.psql-database.username" to "sa",
+        "ktor.psql-database.password" to "",
+        "ktor.psql-database.driver" to "org.h2.Driver"
+    )
+
     private val jwtService = JwtService(JwtConfig("test-secret", "test-issuer",
         "test-audience", "test-realm"))
-    private val loginService = LoginServiceImpl(jwtService = jwtService)
     private val userRepository = PSQLUserRepository()
+    private val loginService = LoginServiceImpl(userRepository = userRepository, jwtService = jwtService)
 
     @BeforeTest
     fun setup() {
-        TestDatabase.init()
+        configureDatabases(testConfig)
     }
 
     @AfterTest
     fun tearDown() {
-        TestDatabase.tearDown()
+        transaction {
+            SchemaUtils.drop(com.dw.db.mapping.UserTable)
+        }
     }
 
     @Test

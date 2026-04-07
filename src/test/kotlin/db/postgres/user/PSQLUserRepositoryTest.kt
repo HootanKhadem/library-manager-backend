@@ -1,33 +1,42 @@
 package db.postgres.user
 
-import TestDatabase
 import com.dw.db.postgres.user.PSQLUserRepository
 import com.dw.model.dto.Role
+import com.dw.plugins.configureDatabases
 import com.dw.service.util.PasswordUtil
 import io.ktor.server.config.*
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.test.*
 
 class PSQLUserRepositoryTest {
 
+    private val testConfig = MapApplicationConfig().apply {
+        put("ktor.admin.username", "admin")
+        put("ktor.admin.password", "admin")
+        put("ktor.admin.email", "admin@example.com")
+        put("ktor.psql-database.url", "jdbc:h2:mem:repo_test;DB_CLOSE_DELAY=-1")
+        put("ktor.psql-database.username", "sa")
+        put("ktor.psql-database.password", "")
+        put("ktor.psql-database.driver", "org.h2.Driver")
+    }
+
     @BeforeTest
     fun setup() {
-        TestDatabase.init()
+        configureDatabases(testConfig)
     }
 
     @AfterTest
     fun tearDown() {
-        TestDatabase.tearDown()
+        transaction {
+            SchemaUtils.drop(com.dw.db.mapping.UserTable)
+        }
     }
 
     @Test
     fun `test createAdminUser creates user when not exists`() = runBlocking {
-        val config = MapApplicationConfig().apply {
-            put("ktor.admin.username", "admin")
-            put("ktor.admin.password", "admin")
-            put("ktor.admin.email", "admin@example.com")
-        }
-        val repo = PSQLUserRepository(config)
+        val repo = PSQLUserRepository(testConfig)
         
         repo.createAdminUser()
         
@@ -41,11 +50,7 @@ class PSQLUserRepositoryTest {
 
     @Test
     fun `test createAdminUser does not duplicate user`() = runBlocking {
-        val config = MapApplicationConfig().apply {
-            put("ktor.admin.username", "admin")
-            put("ktor.admin.password", "admin")
-        }
-        val repo = PSQLUserRepository(config)
+        val repo = PSQLUserRepository(testConfig)
         
         repo.createAdminUser()
         val firstUser = repo.findByUsername("admin")

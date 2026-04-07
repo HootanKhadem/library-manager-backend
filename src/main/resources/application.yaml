@@ -18,3 +18,4 @@ ktor:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/library}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:mysecretpassword}
+    driver: ${DB_DRIVER:org.postgresql.Driver}
