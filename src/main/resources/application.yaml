@@ -5,12 +5,16 @@ ktor:
   deployment:
     port: 8080
   jwt:
-    secret: ${JWT_SECRET:-"secret"}
-    issuer: ${JWT_ISSUER:-"issuer"}
-    audience: ${JWT_AUDIENCE:-"**"}
-    realm: ${JWT_REALM:-"access to the library"}
+    secret: ${JWT_SECRET:secret}
+    issuer: ${JWT_ISSUER:issuer}
+    audience: ${JWT_AUDIENCE:**}
+    realm: ${JWT_REALM:access to the library}
     signatureAlgorithm: "HS256"
+  admin:
+    username: ${ADMIN_USERNAME:admin}
+    password: ${ADMIN_PASSWORD:admin}
+    email: ${ADMIN_EMAIL:admin@example.com}
   psql-database:
-    url: ${DB_URL:-"jdbc:postgresql://localhost:5432/library"}
-    username: ${DB_USERNAME:-"postgres"}
-    password: ${DB_PASSWORD:-"mysecretpassword"}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/library}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:mysecretpassword}

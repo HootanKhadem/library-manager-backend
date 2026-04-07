@@ -1,5 +1,6 @@
 package com.dw.plugins
 
+import com.dw.db.postgres.user.PSQLUserRepository
 import com.dw.service.authentication.JwtService
 import com.dw.service.authentication.LoginServiceImpl
 import com.dw.service.authentication.LoginServiceInterface
@@ -14,5 +15,6 @@ fun Application.configureDependencyInjection() {
         val jwtService = JwtService(jwtConfig)
         provide { jwtService }
         provide<LoginServiceInterface> { LoginServiceImpl(jwtService = jwtService) }
+        provide { PSQLUserRepository(this@configureDependencyInjection.environment.config) }
     }
 }
