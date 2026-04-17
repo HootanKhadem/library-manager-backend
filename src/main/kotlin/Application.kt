@@ -1,5 +1,6 @@
 package com.dw
 
+import com.dw.migration.initialUserMigration
 import com.dw.plugins.*
 import io.ktor.server.application.*
 
@@ -9,11 +10,15 @@ fun main(args: Array<String>) {
 
 suspend fun Application.module() {
     configureHTTP()
+    configureDatabases()
 
     configureDependencyInjection()
+    initialUserMigration()
 
 
-    configureRouting()
+    configurePublicRouting()
+    configureAuthenticatedRouting()
+    configureAdminRouting()
     configureContentNegotiation()
     configureJWT()
 }

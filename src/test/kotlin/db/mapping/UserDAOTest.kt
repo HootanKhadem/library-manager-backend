@@ -1,10 +1,13 @@
 package db.mapping
 
-import TestDatabase
 import com.dw.db.postgres.user.PSQLUserRepository
 import com.dw.model.dto.Role
 import com.dw.model.dto.UserDTO
+import com.dw.plugins.configureDatabases
+import io.ktor.server.config.*
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.test.*
 
 /**
@@ -21,15 +24,24 @@ import kotlin.test.*
  */
 class UserDAOTest {
 
+    private val testConfig = MapApplicationConfig(
+        "ktor.psql-database.url" to "jdbc:h2:mem:user_dao_test;DB_CLOSE_DELAY=-1",
+        "ktor.psql-database.username" to "sa",
+        "ktor.psql-database.password" to "",
+        "ktor.psql-database.driver" to "org.h2.Driver"
+    )
+
     private val userRepository = PSQLUserRepository()
     @BeforeTest
     fun setup() {
-        TestDatabase.init()
+        configureDatabases(testConfig)
     }
 
     @AfterTest
     fun tearDown() {
-        TestDatabase.tearDown()
+        transaction {
+            SchemaUtils.drop(com.dw.db.mapping.UserTable)
+        }
     }
 
     @Test

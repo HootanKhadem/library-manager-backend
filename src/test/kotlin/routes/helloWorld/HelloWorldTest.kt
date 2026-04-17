@@ -1,7 +1,8 @@
 package routes.helloWorld
 
 import com.dw.plugins.configureDependencyInjection
-import com.dw.plugins.configureRouting
+import com.dw.plugins.configureJWT
+import com.dw.plugins.configurePublicRouting
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -23,7 +24,8 @@ class HelloWorldTest {
         }
         application {
             configureDependencyInjection()
-            configureRouting()
+            configureJWT()
+            configurePublicRouting()
         }
         val response = client.get("/")
         assertEquals(HttpStatusCode.OK, response.status)

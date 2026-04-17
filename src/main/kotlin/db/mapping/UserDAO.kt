@@ -8,9 +8,9 @@ import org.jetbrains.exposed.v1.dao.LongEntity
 import org.jetbrains.exposed.v1.dao.LongEntityClass
 
 object UserTable : LongIdTable("user") {
-    val username = varchar("username", 255)
+    val username = varchar("username", 255).uniqueIndex()
     val password = varchar("password", 255)
-    val email = varchar("email", 255)
+    val email = varchar("email", 255).uniqueIndex()
     val role = varchar("role", 255)
     val salt = varchar("salt", 255)
 }

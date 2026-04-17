@@ -24,6 +24,7 @@ class JwtService(private val config: JwtConfig) {
             .withAudience(config.audience)
             .withIssuer(config.issuer)
             .withClaim("email", user.email)
+            .withClaim("role", user.role.name)
             .withExpiresAt(Date(System.currentTimeMillis() + 3600000)) // 1 hour for now
             .sign(Algorithm.HMAC256(config.secret))
     }
