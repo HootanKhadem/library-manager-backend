@@ -25,6 +25,7 @@ suspend fun Application.configurePublicRouting() {
 
 
 fun Application.configureAuthenticatedRouting() {
+
     routing {
         authenticate("auth-jwt") {
              withRole(Role.USER) {

@@ -1,6 +1,6 @@
 package com.dw.model.dto
 
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.*
 
 
 enum class Role {
@@ -18,3 +18,6 @@ data class UserDTO(
      val salt: String? = null
 ) {
 }
+
+@Serializable
+data class LoginDTO(val username: String, val password: String)
