@@ -12,6 +12,7 @@ class JwtService(private val config: JwtConfig) {
 
     companion object {
         const val ACCESS_TOKEN_EXPIRES = 3600000
+        const val REFRESH_TOKEN_EXPIRES = 3600000 * 7
     }
 
     val verifier: JWTVerifier = JWT.require(Algorithm.HMAC256(config.secret))
@@ -23,13 +24,17 @@ class JwtService(private val config: JwtConfig) {
 
     }
 
-    fun generateToken(user: UserDTO): String {
-        return JWT.create()
-            .withAudience(config.audience)
-            .withIssuer(config.issuer)
-            .withClaim("email", user.email)
-            .withClaim("role", user.role.name)
-            .withExpiresAt(Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRES)) // 1 hour for now
-            .sign(Algorithm.HMAC256(config.secret))
+    fun generateToken(user: UserDTO): Pair<String, String> {
+        val accessToken = signToken(user, ACCESS_TOKEN_EXPIRES)
+        val refreshToken = signToken(user, REFRESH_TOKEN_EXPIRES)
+        return Pair(accessToken, refreshToken)
     }
+
+    private fun signToken(user: UserDTO, expireTime: Int): String = JWT.create()
+        .withAudience(config.audience)
+        .withIssuer(config.issuer)
+        .withClaim("email", user.email)
+        .withClaim("role", user.role.name)
+        .withExpiresAt(Date(System.currentTimeMillis() + expireTime))
+        .sign(Algorithm.HMAC256(config.secret))
 }

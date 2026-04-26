@@ -5,7 +5,7 @@ import com.dw.db.UserRepository
 import com.dw.service.util.PasswordUtil
 
 interface LoginServiceInterface {
-    suspend fun login(username: String, password: String): String
+    suspend fun login(username: String, password: String): Pair<String, String>
 }
 
 class LoginServiceImpl(
@@ -13,7 +13,7 @@ class LoginServiceImpl(
     private val jwtService: JwtService
 ) : LoginServiceInterface {
 
-    override suspend fun login(username: String, password: String): String {
+    override suspend fun login(username: String, password: String): Pair<String, String> {
         val user = userRepository.findByUsername(username)
             ?: throw UserNotFoundException("User not found: $username")
 

@@ -65,10 +65,13 @@ class LoginServiceImplTest {
             )
         )
 
-        val token = loginService.login(username, password)
+        val tokenPair = loginService.login(username, password)
 
-        assertNotNull(token, "Login should return a token")
-        assertNotEquals("token", token, "the result should not be hardcoded")
+        assertNotNull(tokenPair.first, "Login should return an access token")
+        assertNotNull(tokenPair.second, "Login should return a refresh token")
+        assertTrue(tokenPair.first.isNotBlank(), "Access token should not be blank")
+        assertTrue(tokenPair.second.isNotBlank(), "Refresh token should not be blank")
+        assertNotEquals(tokenPair.first, tokenPair.second, "Access and refresh tokens should differ")
     }
 
     @Test

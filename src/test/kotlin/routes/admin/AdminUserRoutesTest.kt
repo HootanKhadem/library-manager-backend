@@ -56,12 +56,12 @@ class AdminUserRoutesTest {
 
         val adminUser =
             UserDTO(id = 1, name = "Admin", email = "admin@example.com", password = "pass", role = Role.ADMIN)
-        val token = jwtService.generateToken(adminUser)
+        val tokenPair = jwtService.generateToken(adminUser)
 
         val newUser = UserDTO(name = "New User", email = "new@example.com", password = "password", role = Role.USER)
 
         val response = client.post("/admin/users") {
-            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.Authorization, "Bearer ${tokenPair.first}")
             contentType(ContentType.Application.Json)
             setBody(gson.toJson(newUser))
         }
@@ -89,12 +89,12 @@ class AdminUserRoutesTest {
 
         val regularUser =
             UserDTO(id = 1, name = "User", email = "user@example.com", password = "pass", role = Role.USER)
-        val token = jwtService.generateToken(regularUser)
+        val tokenPair = jwtService.generateToken(regularUser)
 
         val newUser = UserDTO(name = "New User", email = "new@example.com", password = "password", role = Role.USER)
 
         val response = client.post("/admin/users") {
-            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.Authorization, "Bearer ${tokenPair.first}")
             contentType(ContentType.Application.Json)
             setBody(gson.toJson(newUser))
         }
