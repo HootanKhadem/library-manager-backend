@@ -15,15 +15,6 @@ class JwtService(private val config: JwtConfig) {
         const val REFRESH_TOKEN_EXPIRES = 3600000 * 7
     }
 
-    val verifier: JWTVerifier = JWT.require(Algorithm.HMAC256(config.secret))
-        .withIssuer(config.issuer)
-        .withAudience(config.audience)
-        .build()
-
-    fun validate(token: String) {
-
-    }
-
     fun generateToken(user: UserDTO): Pair<String, String> {
         val accessToken = signToken(user, ACCESS_TOKEN_EXPIRES)
         val refreshToken = signToken(user, REFRESH_TOKEN_EXPIRES)

@@ -111,6 +111,38 @@ class JWTIntegrationTest {
     }
 
     @Test
+    fun `protected route should return 401 for token with invalid issuer`() = testJWTApplication {
+        val token = JWT.create()
+            .withAudience(audience)
+            .withIssuer("other-issuer")
+            .withClaim("email", "testuser@example.com")
+            .withExpiresAt(Date(System.currentTimeMillis() + 3600000))
+            .sign(Algorithm.HMAC256(secret))
+
+        val response = client.get("/protected") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `protected route should return 401 for token with invalid audience`() = testJWTApplication {
+        val token = JWT.create()
+            .withAudience("other-audience")
+            .withIssuer(issuer)
+            .withClaim("email", "testuser@example.com")
+            .withExpiresAt(Date(System.currentTimeMillis() + 3600000))
+            .sign(Algorithm.HMAC256(secret))
+
+        val response = client.get("/protected") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
     fun `protected route should return 401 for token with missing claim`() = testJWTApplication {
         val token = JWT.create()
             .withAudience(audience)
