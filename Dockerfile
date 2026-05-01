@@ -20,7 +20,7 @@ RUN apt-get update \
 
 # Copy the built JAR from the build stage
 # The name is based on artifactId and version in pom.xml
-COPY --from=build /app/target/librarymanager-0.0.1-jar-with-dependencies.jar app.jar
+COPY --from=build /app/target/librarymanager-0.0.1.jar app.jar
 
 # Expose the port Ktor is configured to use
 EXPOSE 8080
