@@ -5,6 +5,8 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.dw.model.dto.Role
 import com.dw.model.dto.UserDTO
 import com.dw.plugins.JwtConfig
+import com.dw.service.authentication.JwtService.Companion.ACCESS_TOKEN_EXPIRES
+import com.dw.service.authentication.JwtService.Companion.REFRESH_TOKEN_EXPIRES
 import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals
@@ -22,7 +24,7 @@ class JwtServiceTest {
     private val jwtService = JwtService(config)
 
     @Test
-    fun `generateToken should return a valid JWT`() {
+    fun `generateToken should return valid access and refresh JWT`() {
         // Given
         val user = UserDTO(
             id = 1,
@@ -33,23 +35,33 @@ class JwtServiceTest {
         )
 
         // When
-        val token = jwtService.generateToken(user)
+        val tokenPair = jwtService.generateToken(user)
 
         // Then
-        assertNotNull(token)
+        assertNotNull(tokenPair.first)
+        assertNotNull(tokenPair.second)
 
         val verifier = JWT.require(Algorithm.HMAC256(config.secret))
             .withIssuer(config.issuer)
             .withAudience(config.audience)
             .build()
 
-        val decodedJWT = verifier.verify(token)
+        val accessDecodedJWT = verifier.verify(tokenPair.first)
+        val refreshDecodedJWT = verifier.verify(tokenPair.second)
+        val now = System.currentTimeMillis()
 
-        assertEquals(config.issuer, decodedJWT.issuer)
-        assertEquals(config.audience, decodedJWT.audience[0])
-        assertEquals("test@example.com", decodedJWT.getClaim("email").asString())
-        assertEquals(user.role.name, decodedJWT.getClaim("role").asString())
-        assertTrue(decodedJWT.expiresAt.after(Date()))
-        assertTrue(decodedJWT.expiresAt.before(Date(System.currentTimeMillis() + 3600001)))
+        assertEquals(config.issuer, accessDecodedJWT.issuer)
+        assertEquals(config.audience, accessDecodedJWT.audience[0])
+        assertEquals("test@example.com", accessDecodedJWT.getClaim("email").asString())
+        assertEquals(user.role.name, accessDecodedJWT.getClaim("role").asString())
+        assertTrue(accessDecodedJWT.expiresAt.after(Date(now)))
+        assertTrue(accessDecodedJWT.expiresAt.before(Date(now + ACCESS_TOKEN_EXPIRES + 5000)))
+
+        assertEquals(config.issuer, refreshDecodedJWT.issuer)
+        assertEquals(config.audience, refreshDecodedJWT.audience[0])
+        assertEquals("test@example.com", refreshDecodedJWT.getClaim("email").asString())
+        assertEquals(user.role.name, refreshDecodedJWT.getClaim("role").asString())
+        assertTrue(refreshDecodedJWT.expiresAt.after(Date(now)))
+        assertTrue(refreshDecodedJWT.expiresAt.before(Date(now + REFRESH_TOKEN_EXPIRES + 5000)))
     }
 }

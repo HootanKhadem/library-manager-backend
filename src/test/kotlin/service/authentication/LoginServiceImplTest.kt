@@ -48,54 +48,53 @@ class LoginServiceImplTest {
 
     @Test
     fun validLogin() = runBlocking {
-        // The user requested a test for valid login.
-        // Currently, LoginServiceImpl.login is a stub that returns "token".
-        // This test ensures that the service returns the expected token for a valid-looking request.
-
-        val username = "testuser"
+        val email = "test@example.com"
         val password = "password"
         val salt = PasswordUtil.generateSalt()
         userRepository.save(
             UserDTO(
-                name = username,
-                email = "test@example.com",
+                name = "testuser",
+                email = email,
                 password = PasswordUtil.hashWithSalt(password, salt),
                 salt = salt,
                 role = Role.USER
             )
         )
 
-        val token = loginService.login(username, password)
+        val tokenPair = loginService.login(email, password)
 
-        assertNotNull(token, "Login should return a token")
-        assertNotEquals("token", token, "the result should not be hardcoded")
+        assertNotNull(tokenPair.first, "Login should return an access token")
+        assertNotNull(tokenPair.second, "Login should return a refresh token")
+        assertTrue(tokenPair.first.isNotBlank(), "Access token should not be blank")
+        assertTrue(tokenPair.second.isNotBlank(), "Refresh token should not be blank")
+        assertNotEquals(tokenPair.first, tokenPair.second, "Access and refresh tokens should differ")
     }
 
     @Test
     fun `non-existing user login should fail test`(): Unit = runBlocking {
-        val username = "non-existing-user"
+        val email = "non-existing@example.com"
         val password = "password"
         assertThrows(UserNotFoundException::class.java) { 
-            runBlocking { loginService.login(username, password) } 
+            runBlocking { loginService.login(email, password) } 
         }
     }
 
     @Test
     fun `valid login with incorrect credentials`(): Unit = runBlocking {
-        val username = "testuser"
+        val email = "test@example.com"
         val password = "wrongpassword"
         val salt = PasswordUtil.generateSalt()
         userRepository.save(
             UserDTO(
-                name = username,
-                email = "test@example.com",
+                name = "testuser",
+                email = email,
                 password = PasswordUtil.hashWithSalt("password", salt),
                 salt = salt,
                 role = Role.USER
             )
         )
         assertThrows(UserNotFoundException::class.java) {
-            runBlocking { loginService.login(username, password) }
+            runBlocking { loginService.login(email, password) }
         }
     }
 }

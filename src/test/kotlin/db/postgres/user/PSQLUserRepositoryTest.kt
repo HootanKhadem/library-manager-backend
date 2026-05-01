@@ -73,4 +73,15 @@ class PSQLUserRepositoryTest {
         assertNotNull(user)
         assertEquals("admin", user.name)
     }
+
+    @Test
+    fun `test findByEmail returns user by email`() = runBlocking {
+        val repo = PSQLUserRepository(testConfig)
+
+        repo.createAdminUser()
+
+        val user = repo.findByEmail("admin@example.com")
+        assertNotNull(user)
+        assertEquals("admin", user.name)
+    }
 }
