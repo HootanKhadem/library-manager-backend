@@ -14,6 +14,10 @@ RUN mvn package -DskipTests -B
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy the built JAR from the build stage
 # The name is based on artifactId and version in pom.xml
 COPY --from=build /app/target/librarymanager-0.0.1-jar-with-dependencies.jar app.jar
