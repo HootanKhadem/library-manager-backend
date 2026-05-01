@@ -18,6 +18,13 @@ class PSQLUserRepository(private val config: ApplicationConfig? = null) : UserRe
                 ?.toUserDto()
         }
 
+    override suspend fun findByEmail(email: String): UserDTO? =
+        withTransaction {
+            UserDAO.find { UserTable.email eq email }
+                .firstOrNull()
+                ?.toUserDto()
+        }
+
 
     override suspend fun save(userDTO: UserDTO): UserDTO = withTransaction {
         UserDAO.new {

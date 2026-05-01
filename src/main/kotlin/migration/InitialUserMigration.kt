@@ -7,6 +7,5 @@ import io.ktor.server.plugins.di.*
 
 suspend fun Application.initialUserMigration() {
     val userRepository = dependencies.resolve<UserRepository>()
-
-    val user = userRepository.createAdminUser()
+    userRepository.createAdminUser()
 }

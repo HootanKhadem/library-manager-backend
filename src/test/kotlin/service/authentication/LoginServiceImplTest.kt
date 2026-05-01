@@ -48,24 +48,20 @@ class LoginServiceImplTest {
 
     @Test
     fun validLogin() = runBlocking {
-        // The user requested a test for valid login.
-        // Currently, LoginServiceImpl.login is a stub that returns "token".
-        // This test ensures that the service returns the expected token for a valid-looking request.
-
-        val username = "testuser"
+        val email = "test@example.com"
         val password = "password"
         val salt = PasswordUtil.generateSalt()
         userRepository.save(
             UserDTO(
-                name = username,
-                email = "test@example.com",
+                name = "testuser",
+                email = email,
                 password = PasswordUtil.hashWithSalt(password, salt),
                 salt = salt,
                 role = Role.USER
             )
         )
 
-        val tokenPair = loginService.login(username, password)
+        val tokenPair = loginService.login(email, password)
 
         assertNotNull(tokenPair.first, "Login should return an access token")
         assertNotNull(tokenPair.second, "Login should return a refresh token")
@@ -76,29 +72,29 @@ class LoginServiceImplTest {
 
     @Test
     fun `non-existing user login should fail test`(): Unit = runBlocking {
-        val username = "non-existing-user"
+        val email = "non-existing@example.com"
         val password = "password"
         assertThrows(UserNotFoundException::class.java) { 
-            runBlocking { loginService.login(username, password) } 
+            runBlocking { loginService.login(email, password) } 
         }
     }
 
     @Test
     fun `valid login with incorrect credentials`(): Unit = runBlocking {
-        val username = "testuser"
+        val email = "test@example.com"
         val password = "wrongpassword"
         val salt = PasswordUtil.generateSalt()
         userRepository.save(
             UserDTO(
-                name = username,
-                email = "test@example.com",
+                name = "testuser",
+                email = email,
                 password = PasswordUtil.hashWithSalt("password", salt),
                 salt = salt,
                 role = Role.USER
             )
         )
         assertThrows(UserNotFoundException::class.java) {
-            runBlocking { loginService.login(username, password) }
+            runBlocking { loginService.login(email, password) }
         }
     }
 }

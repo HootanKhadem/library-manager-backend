@@ -12,7 +12,7 @@ import java.util.*
 fun Route.login(loginService: LoginServiceInterface) {
     post("/auth/login") {
         val loginDTO = call.receive<LoginDTO>()
-        val token = loginService.login(loginDTO.username, loginDTO.password)
+        val token = loginService.login(loginDTO.email, loginDTO.password)
         appendTokensToCookies(token)
         call.respond(mapOf("access_token" to token.first, "refresh_token" to token.second))
     }
