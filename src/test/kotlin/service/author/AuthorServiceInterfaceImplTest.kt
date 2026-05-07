@@ -104,7 +104,7 @@ class AuthorServiceInterfaceImplTest {
     // ── findOrCreateAuthor ────────────────────────────────────────────────────
 
     @Test
-    fun `findOrCreateAuthor creates author when not exists`() = runBlocking {
+    fun `findOrCreateAuthor creates author when not exists`(): Unit = runBlocking {
         val author = Author(name = "Brand New", image = "new.jpg")
         val result = authorService.findOrCreateAuthor(author, userId = 1L)
 
