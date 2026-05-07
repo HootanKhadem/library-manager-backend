@@ -1,5 +1,7 @@
 package com.dw.plugins
 
+import com.dw.db.mapping.AuthorTable
+import com.dw.db.mapping.BookTable
 import com.dw.db.mapping.UserTable
 import io.ktor.server.application.*
 import io.ktor.server.config.*
@@ -25,8 +27,7 @@ fun configureDatabases(config: ApplicationConfig) {
         password = dbPassword
     )
 
-    // Ensure table is created
     transaction {
-        SchemaUtils.create(UserTable)
+        SchemaUtils.create(UserTable, AuthorTable, BookTable)
     }
 }

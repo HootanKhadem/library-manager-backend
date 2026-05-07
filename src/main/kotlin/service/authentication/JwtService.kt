@@ -1,7 +1,6 @@
 package com.dw.service.authentication
 
 import com.auth0.jwt.JWT
-import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import com.dw.model.dto.UserDTO
 import com.dw.plugins.JwtConfig
@@ -26,6 +25,7 @@ class JwtService(private val config: JwtConfig) {
         .withIssuer(config.issuer)
         .withClaim("email", user.email)
         .withClaim("role", user.role.name)
+        .withClaim("userId", user.id)
         .withExpiresAt(Date(System.currentTimeMillis() + expireTime))
         .sign(Algorithm.HMAC256(config.secret))
 }
