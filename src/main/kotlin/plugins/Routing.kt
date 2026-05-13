@@ -2,11 +2,15 @@ package com.dw.plugins
 
 import com.dw.model.dto.Role
 import com.dw.routes.admin.adminCreateUser
+import com.dw.routes.author.authorRoutes
+import com.dw.routes.book.bookRoutes
 import com.dw.routes.helloWorld.helloWorld
 import com.dw.routes.metrics.metrics
 import com.dw.routes.user.login
 import com.dw.service.admin.CreateUserServiceInterface
 import com.dw.service.authentication.LoginServiceInterface
+import com.dw.service.author.AuthorServiceInterface
+import com.dw.service.book.BookServiceInterface
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.plugins.di.*
@@ -15,11 +19,15 @@ import io.ktor.server.routing.*
 suspend fun Application.configurePublicRouting() {
 
     val loginService = dependencies.resolve<LoginServiceInterface>()
+    val authorService = dependencies.resolve<AuthorServiceInterface>()
+    val bookService = dependencies.resolve<BookServiceInterface>()
 
     routing {
         helloWorld()
         metrics()
         login(loginService)
+        authorRoutes(authorService)
+        bookRoutes(bookService)
     }
 }
 

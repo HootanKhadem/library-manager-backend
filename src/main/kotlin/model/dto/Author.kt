@@ -4,7 +4,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Author(
-    private val name: String,
-    private val image: String
-) {
-}
+    val id: Long? = null,
+    val name: String,
+    val image: String,
+    val userId: Long? = null,
+    val createdOn: String? = null,
+    val createdBy: Long? = null,
+    val modifiedOn: String? = null,
+    val modifiedBy: Long? = null
+)
