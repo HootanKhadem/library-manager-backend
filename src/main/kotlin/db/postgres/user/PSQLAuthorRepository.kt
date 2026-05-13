@@ -5,12 +5,11 @@ import com.dw.db.mapping.AuthorDAO
 import com.dw.db.mapping.AuthorTable
 import com.dw.db.withTransaction
 import com.dw.model.dto.Author
-import io.ktor.server.config.ApplicationConfig
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.like
 import org.jetbrains.exposed.v1.core.lowerCase
 
-class PSQLAuthorRepository(private val config: ApplicationConfig? = null) : AuthorRepository {
+class PSQLAuthorRepository : AuthorRepository {
     override suspend fun save(author: Author): Author = withTransaction {
         AuthorDAO.new {
             updateFromDto(author)
