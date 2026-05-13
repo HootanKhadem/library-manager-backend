@@ -1,24 +1,19 @@
 package routes.book
 
-import com.dw.db.mapping.AuthorTable
-import com.dw.db.mapping.BookTable
-import com.dw.db.mapping.UserTable
 import com.dw.model.dto.Author
 import com.dw.model.dto.Book
 import com.dw.plugins.*
-import com.google.gson.Gson
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.server.config.*
 import io.ktor.server.testing.*
-import org.jetbrains.exposed.v1.jdbc.SchemaUtils
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import routes.BaseRouteTest
 import kotlin.test.*
 
-class BookRoutesTest {
+class BookRoutesTest : BaseRouteTest() {
 
-    private val testConfig = MapApplicationConfig(
+    override val testConfig = MapApplicationConfig(
         "ktor.psql-database.url" to "jdbc:h2:mem:book_route_test;DB_CLOSE_DELAY=-1",
         "ktor.psql-database.username" to "sa",
         "ktor.psql-database.password" to "",
@@ -28,14 +23,6 @@ class BookRoutesTest {
         "ktor.jwt.audience" to "audience",
         "ktor.jwt.realm" to "realm"
     )
-
-    private val gson = Gson()
-
-    private fun cleanup() {
-        transaction {
-            SchemaUtils.drop(BookTable, AuthorTable, UserTable)
-        }
-    }
 
     private fun bookPayload(
         authorName: String = "Route Test Author",
@@ -59,16 +46,12 @@ class BookRoutesTest {
 
     @Test
     fun `POST api book creates book with new author`() = testApplication {
-        environment { config = testConfig }
-        application {
-            configureDatabases(testConfig)
-            configureDependencyInjection()
-            configureContentNegotiation()
-            configurePublicRouting()
-        }
+        setupLibraryApp()
+        val token = createToken()
 
         val payload = bookPayload(isbn = "isbn-new-author-route")
         val response = client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(gson.toJson(payload))
         }
@@ -88,16 +71,12 @@ class BookRoutesTest {
 
     @Test
     fun `POST api book reuses existing author by name`() = testApplication {
-        environment { config = testConfig }
-        application {
-            configureDatabases(testConfig)
-            configureDependencyInjection()
-            configureContentNegotiation()
-            configurePublicRouting()
-        }
+        setupLibraryApp()
+        val token = createToken()
 
         // create author first via author route
         val authorResponse = client.post("/api/author") {
+            header(HttpHeaders.Authorization, "Bearer $token")
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(gson.toJson(Author(name = "Shared Author", image = "shared.jpg")))
         }
@@ -106,6 +85,7 @@ class BookRoutesTest {
         // create book referencing same author name (no id)
         val payload = bookPayload(authorName = "Shared Author", isbn = "isbn-shared-author")
         val response = client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(gson.toJson(payload))
         }
@@ -119,16 +99,12 @@ class BookRoutesTest {
 
     @Test
     fun `POST api book sets audit fields`() = testApplication {
-        environment { config = testConfig }
-        application {
-            configureDatabases(testConfig)
-            configureDependencyInjection()
-            configureContentNegotiation()
-            configurePublicRouting()
-        }
+        setupLibraryApp()
+        val token = createToken()
 
         val payload = bookPayload(isbn = "isbn-audit-route", userId = 10L)
         val response = client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(gson.toJson(payload))
         }
@@ -147,21 +123,19 @@ class BookRoutesTest {
 
     @Test
     fun `GET api book id returns book when exists`() = testApplication {
-        environment { config = testConfig }
-        application {
-            configureDatabases(testConfig)
-            configureDependencyInjection()
-            configureContentNegotiation()
-            configurePublicRouting()
-        }
+        setupLibraryApp()
+        val token = createToken()
 
         val createResponse = client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(gson.toJson(bookPayload(isbn = "isbn-get-route")))
         }
         val created = gson.fromJson(createResponse.bodyAsText(), Book::class.java)
 
-        val response = client.get("/api/book/${created.id}")
+        val response = client.get("/api/book/${created.id}") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
         assertEquals(HttpStatusCode.OK, response.status)
         val found = gson.fromJson(response.bodyAsText(), Book::class.java)
         assertEquals(created.id, found.id)
@@ -172,15 +146,12 @@ class BookRoutesTest {
 
     @Test
     fun `GET api book id returns 404 when not exists`() = testApplication {
-        environment { config = testConfig }
-        application {
-            configureDatabases(testConfig)
-            configureDependencyInjection()
-            configureContentNegotiation()
-            configurePublicRouting()
-        }
+        setupLibraryApp()
+        val token = createToken()
 
-        val response = client.get("/api/book/99999")
+        val response = client.get("/api/book/99999") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
         assertEquals(HttpStatusCode.NotFound, response.status)
 
         cleanup()
@@ -188,15 +159,12 @@ class BookRoutesTest {
 
     @Test
     fun `GET api book id returns 400 for invalid id`() = testApplication {
-        environment { config = testConfig }
-        application {
-            configureDatabases(testConfig)
-            configureDependencyInjection()
-            configureContentNegotiation()
-            configurePublicRouting()
-        }
+        setupLibraryApp()
+        val token = createToken()
 
-        val response = client.get("/api/book/not-a-number")
+        val response = client.get("/api/book/not-a-number") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
         assertEquals(HttpStatusCode.BadRequest, response.status)
 
         cleanup()
