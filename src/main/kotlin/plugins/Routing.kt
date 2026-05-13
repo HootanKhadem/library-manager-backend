@@ -19,26 +19,25 @@ import io.ktor.server.routing.*
 suspend fun Application.configurePublicRouting() {
 
     val loginService = dependencies.resolve<LoginServiceInterface>()
-    val authorService = dependencies.resolve<AuthorServiceInterface>()
-    val bookService = dependencies.resolve<BookServiceInterface>()
+
 
     routing {
         helloWorld()
         metrics()
         login(loginService)
-        authorRoutes(authorService)
-        bookRoutes(bookService)
     }
 }
 
 
-fun Application.configureAuthenticatedRouting() {
-
+suspend fun Application.configureAuthenticatedRouting() {
+    val authorService = dependencies.resolve<AuthorServiceInterface>()
+    val bookService = dependencies.resolve<BookServiceInterface>()
     routing {
         authenticate("auth-jwt") {
-             withRole(Role.USER) {
-                 // TODO: Add authenticated routes for user role here
-             }
+            withRole(Role.USER) {
+                authorRoutes(authorService)
+                bookRoutes(bookService)
+            }
         }
     }
 }

@@ -26,7 +26,7 @@ fun Application.configureDependencyInjection() {
         val jwtService = JwtService(jwtConfig)
         provide { jwtService }
         provide<UserRepository> { PSQLUserRepository(this@configureDependencyInjection.environment.config) }
-        provide<AuthorRepository> { PSQLAuthorRepository(this@configureDependencyInjection.environment.config) }
+        provide<AuthorRepository> { PSQLAuthorRepository() }
         provide<BookRepository> { PSQLBookRepository() }
         provide<LoginServiceInterface> { LoginServiceImpl(userRepository = resolve(), jwtService = jwtService) }
         provide<CreateUserServiceInterface> { CreateUserService(userRepository = resolve()) }

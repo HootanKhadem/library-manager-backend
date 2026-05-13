@@ -1,23 +1,18 @@
 package routes.author
 
-import com.dw.db.mapping.AuthorTable
-import com.dw.db.mapping.BookTable
-import com.dw.db.mapping.UserTable
 import com.dw.model.dto.Author
 import com.dw.plugins.*
-import com.google.gson.Gson
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.server.config.*
 import io.ktor.server.testing.*
-import org.jetbrains.exposed.v1.jdbc.SchemaUtils
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import routes.BaseRouteTest
 import kotlin.test.*
 
-class AuthorRoutesTest {
+class AuthorRoutesTest : BaseRouteTest() {
 
-    private val testConfig = MapApplicationConfig(
+    override val testConfig = MapApplicationConfig(
         "ktor.psql-database.url" to "jdbc:h2:mem:author_route_test;DB_CLOSE_DELAY=-1",
         "ktor.psql-database.username" to "sa",
         "ktor.psql-database.password" to "",
@@ -28,26 +23,14 @@ class AuthorRoutesTest {
         "ktor.jwt.realm" to "realm"
     )
 
-    private val gson = Gson()
-
-    private fun cleanup() {
-        transaction {
-            SchemaUtils.drop(BookTable, AuthorTable, UserTable)
-        }
-    }
-
     @Test
     fun `test create author`() = testApplication {
-        environment { config = testConfig }
-        application {
-            configureDatabases(testConfig)
-            configureDependencyInjection()
-            configureContentNegotiation()
-            configurePublicRouting()
-        }
+        setupLibraryApp()
+        val token = createToken()
 
         val author = Author(name = "New Author", image = "new.jpg")
         val response = client.post("/api/author") {
+            header(HttpHeaders.Authorization, "Bearer $token")
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(gson.toJson(author))
         }
@@ -62,13 +45,8 @@ class AuthorRoutesTest {
 
     @Test
     fun `test create author with audit fields`() = testApplication {
-        environment { config = testConfig }
-        application {
-            configureDatabases(testConfig)
-            configureDependencyInjection()
-            configureContentNegotiation()
-            configurePublicRouting()
-        }
+        setupLibraryApp()
+        val token = createToken()
 
         val author = Author(
             name = "Audit Author",
@@ -80,6 +58,7 @@ class AuthorRoutesTest {
             modifiedBy = 1L
         )
         val response = client.post("/api/author") {
+            header(HttpHeaders.Authorization, "Bearer $token")
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(gson.toJson(author))
         }
@@ -94,24 +73,23 @@ class AuthorRoutesTest {
 
     @Test
     fun `test search authors`() = testApplication {
-        environment { config = testConfig }
-        application {
-            configureDatabases(testConfig)
-            configureDependencyInjection()
-            configureContentNegotiation()
-            configurePublicRouting()
-        }
+        setupLibraryApp()
+        val token = createToken()
 
         client.post("/api/author") {
+            header(HttpHeaders.Authorization, "Bearer $token")
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(gson.toJson(Author(name = "Author One", image = "1.jpg")))
         }
         client.post("/api/author") {
+            header(HttpHeaders.Authorization, "Bearer $token")
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(gson.toJson(Author(name = "Author Two", image = "2.jpg")))
         }
 
-        val response = client.get("/api/author/search?query=One")
+        val response = client.get("/api/author/search?query=One") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
         assertEquals(HttpStatusCode.OK, response.status)
 
         val results = gson.fromJson(response.bodyAsText(), Array<Author>::class.java)
