@@ -1,0 +1,25 @@
+CREATE TABLE IF NOT EXISTS "user" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "username" VARCHAR(255) NOT NULL UNIQUE,
+    "password" VARCHAR(255) NOT NULL,
+    "email" VARCHAR(255) NOT NULL UNIQUE,
+    "role" VARCHAR(255) NOT NULL,
+    "salt" VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "author" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "name" VARCHAR(255) NOT NULL,
+    "image" VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "book" (
+    "id" BIGSERIAL PRIMARY KEY,
+    "name" VARCHAR(255) NOT NULL,
+    "author_id" BIGINT NOT NULL REFERENCES "author"("id"),
+    "pages" INTEGER NOT NULL,
+    "isbn" VARCHAR(255) NOT NULL UNIQUE,
+    "published_date" VARCHAR(255) NOT NULL,
+    "publisher" VARCHAR(255) NOT NULL,
+    "quantity" INTEGER NOT NULL
+);
