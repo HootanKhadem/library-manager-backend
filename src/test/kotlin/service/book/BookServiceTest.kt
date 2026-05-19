@@ -194,4 +194,17 @@ class BookServiceTest {
         val deleted = bookService.deleteBook(9999L)
         assertFalse(deleted)
     }
+
+    // ── countBooks ────────────────────────────────────────────────────────────
+
+    @Test
+    fun `countBooks returns correct count for userId`() = runBlocking {
+        bookService.createBook(bookRequest(isbn = "isbn-c1", userId = 100L))
+        bookService.createBook(bookRequest(isbn = "isbn-c2", userId = 100L))
+        bookService.createBook(bookRequest(isbn = "isbn-c3", userId = 200L))
+
+        assertEquals(2, bookService.countBooks(100L))
+        assertEquals(1, bookService.countBooks(200L))
+        assertEquals(0, bookService.countBooks(300L))
+    }
 }

@@ -11,6 +11,7 @@ interface BookServiceInterface {
     suspend fun createBook(book: Book): Book
     suspend fun updateBook(id: Long, book: Book): Book?
     suspend fun deleteBook(id: Long): Boolean
+    suspend fun countBooks(userId: Long): Long
 }
 
 class BookServiceImpl(
@@ -41,4 +42,5 @@ class BookServiceImpl(
     }
 
     override suspend fun deleteBook(id: Long): Boolean = bookRepository.delete(id)
+    override suspend fun countBooks(userId: Long): Long = bookRepository.countByUserId(userId)
 }

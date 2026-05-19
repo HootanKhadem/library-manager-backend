@@ -9,6 +9,7 @@ import com.dw.model.dto.Author
 import com.dw.model.dto.Book
 import com.dw.plugins.configureDatabases
 import io.ktor.server.config.*
+import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.test.*
@@ -259,6 +260,49 @@ class BookDAOTest {
             assertEquals(1L, dto.createdBy)
             assertEquals("2024-06-01T00:00:00", dto.modifiedOn)
             assertEquals(2L, dto.modifiedBy)
+        }
+    }
+
+    // ── count ─────────────────────────────────────────────────────────────────
+
+    @Test
+    fun testCountByUserId() {
+        val authorDAO = makeAuthor()
+        transaction {
+            BookDAO.new {
+                name = "Book 1"
+                author = authorDAO
+                isbn = "isbn-1"
+                pages = 100
+                publishedDate = "2000-01-01"
+                publisher = "Pub"
+                quantity = 1
+                userId = 10L
+            }
+            BookDAO.new {
+                name = "Book 2"
+                author = authorDAO
+                isbn = "isbn-2"
+                pages = 100
+                publishedDate = "2000-01-01"
+                publisher = "Pub"
+                quantity = 1
+                userId = 10L
+            }
+            BookDAO.new {
+                name = "Book 3"
+                author = authorDAO
+                isbn = "isbn-3"
+                pages = 100
+                publishedDate = "2000-01-01"
+                publisher = "Pub"
+                quantity = 1
+                userId = 20L
+            }
+
+            assertEquals(2, BookDAO.find { BookTable.userId eq 10L }.count())
+            assertEquals(1, BookDAO.find { BookTable.userId eq 20L }.count())
+            assertEquals(0, BookDAO.find { BookTable.userId eq 30L }.count())
         }
     }
 }

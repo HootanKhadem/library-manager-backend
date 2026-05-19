@@ -56,4 +56,8 @@ class PSQLBookRepository : BookRepository {
         bookDAO.delete()
         true
     }
+
+    override suspend fun countByUserId(userId: Long): Long = withTransaction {
+        BookDAO.find { BookTable.userId eq userId }.count()
+    }
 }

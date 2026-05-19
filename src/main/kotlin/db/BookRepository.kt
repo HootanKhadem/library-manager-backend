@@ -8,4 +8,5 @@ interface BookRepository {
     suspend fun findAllByUserId(userId: Long): List<Book>
     suspend fun update(id: Long, book: Book): Book?
     suspend fun delete(id: Long): Boolean
+    suspend fun countByUserId(userId: Long): Long
 }
