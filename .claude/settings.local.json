@@ -12,7 +12,13 @@
       "mcp__mcp-obsidian__obsidian_list_files_in_vault",
       "mcp__mcp-obsidian__obsidian_append_content",
       "Bash(./mvnw compile *)",
-      "Bash(mvn clean *)"
+      "Bash(mvn clean *)",
+      "Bash(python3 -c \"import yaml,sys; yaml.safe_load\\(open\\('src/main/resources/openapi/documentation.yaml'\\)\\); print\\('OK'\\)\")",
+      "Bash(python -c \"import yaml,sys; yaml.safe_load\\(open\\('src/main/resources/openapi/documentation.yaml'\\)\\); print\\('OK'\\)\")",
+      "Bash(node -e \"require\\('js-yaml'\\)\")",
+      "Read(//tmp/**)",
+      "Bash(node -e ' *)",
+      "Bash(rm -rf /tmp/yamlcheck)"
     ]
   }
 }

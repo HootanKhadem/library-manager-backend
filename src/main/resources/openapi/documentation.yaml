@@ -2,12 +2,24 @@ openapi: 3.0.3
 info:
   title: Library Manager API
   version: 1.0.0
-  description: Minimal OpenAPI spec to back Swagger UI. Extend as needed.
+  description: OpenAPI spec for the Library Manager backend.
 servers:
   - url: /
+tags:
+  - name: public
+  - name: auth
+  - name: admin
+  - name: book
+  - name: author
+  - name: genre
+  - name: member
+  - name: lending
+  - name: dashboard
+
 paths:
   /:
     get:
+      tags: [public]
       summary: Hello World
       description: Public hello endpoint.
       responses:
@@ -18,3 +30,773 @@ paths:
               schema:
                 type: string
                 example: Hello World!
+
+  /metrics:
+    get:
+      tags: [public]
+      summary: Metrics
+      description: Public metrics endpoint.
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Metrics endpoint
+
+  /healthz:
+    get:
+      tags: [public]
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Healthy
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Log in and receive access/refresh tokens
+      description: Tokens are also set as `access_token` and `refresh_token` cookies.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginDTO'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+
+  /admin/users:
+    post:
+      tags: [admin]
+      summary: Create a user
+      description: Requires ADMIN role.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserDTO'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+
+  /api/book:
+    post:
+      tags: [book]
+      summary: Create a book
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Book'
+      responses:
+        '201':
+          description: Book created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+
+  /api/book/{id}:
+    get:
+      tags: [book]
+      summary: Get a book by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '200':
+          description: Book found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: Invalid book ID
+        '404':
+          description: Book not found
+
+  /count-user-books:
+    get:
+      tags: [book]
+      summary: Count books owned by the current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Book count
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+        '401':
+          description: Unauthorized
+
+  /api/author:
+    post:
+      tags: [author]
+      summary: Create an author
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Author'
+      responses:
+        '201':
+          description: Author created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Author'
+
+  /api/author/search:
+    get:
+      tags: [author]
+      summary: Search authors by name
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+            default: ""
+      responses:
+        '200':
+          description: Matching authors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Author'
+
+  /api/genre:
+    get:
+      tags: [genre]
+      summary: List genres for the current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Genres
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Genre'
+        '401':
+          description: Unauthorized
+    post:
+      tags: [genre]
+      summary: Create a genre
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Genre'
+      responses:
+        '201':
+          description: Genre created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Genre'
+        '401':
+          description: Unauthorized
+
+  /api/genre/{id}:
+    put:
+      tags: [genre]
+      summary: Update a genre
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Genre'
+      responses:
+        '200':
+          description: Genre updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Genre'
+        '400':
+          description: Invalid genre ID
+        '401':
+          description: Unauthorized
+        '404':
+          description: Genre not found
+    delete:
+      tags: [genre]
+      summary: Delete a genre
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '204':
+          description: Genre deleted
+        '400':
+          description: Invalid genre ID
+        '404':
+          description: Genre not found
+
+  /api/member:
+    get:
+      tags: [member]
+      summary: List members for the current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Member'
+        '401':
+          description: Unauthorized
+    post:
+      tags: [member]
+      summary: Create a member
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Member'
+      responses:
+        '201':
+          description: Member created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '401':
+          description: Unauthorized
+
+  /api/member/{id}:
+    put:
+      tags: [member]
+      summary: Update a member
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Member'
+      responses:
+        '200':
+          description: Member updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          description: Invalid member ID
+        '401':
+          description: Unauthorized
+        '404':
+          description: Member not found
+    delete:
+      tags: [member]
+      summary: Delete a member
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '204':
+          description: Member deleted
+        '400':
+          description: Invalid member ID
+        '404':
+          description: Member not found
+
+  /api/lending:
+    post:
+      tags: [lending]
+      summary: Lend a book to a member
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Lending'
+      responses:
+        '201':
+          description: Lending created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lending'
+        '401':
+          description: Unauthorized
+
+  /api/lending/active:
+    get:
+      tags: [lending]
+      summary: List active lendings for the current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active lendings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lending'
+        '401':
+          description: Unauthorized
+
+  /api/lending/{id}/return:
+    put:
+      tags: [lending]
+      summary: Return a lent book
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '200':
+          description: Lending updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lending'
+        '400':
+          description: Invalid lending ID
+        '401':
+          description: Unauthorized
+        '404':
+          description: Lending not found
+
+  /dashboard/stats/books:
+    get:
+      tags: [dashboard]
+      summary: Book stats for the current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Book stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookStats'
+        '401':
+          description: Unauthorized
+
+  /dashboard/stats/lent-out:
+    get:
+      tags: [dashboard]
+      summary: Lent-out stats for the current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lent-out stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LentOutStats'
+        '401':
+          description: Unauthorized
+
+  /dashboard/stats/overdue:
+    get:
+      tags: [dashboard]
+      summary: Overdue stats for the current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Overdue stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OverdueStats'
+        '401':
+          description: Unauthorized
+
+  /dashboard/recently-added:
+    get:
+      tags: [dashboard]
+      summary: Recently added books for the current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 5
+      responses:
+        '200':
+          description: Recently added books
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecentlyAddedBook'
+        '401':
+          description: Unauthorized
+
+  /dashboard/recent-activity:
+    get:
+      tags: [dashboard]
+      summary: Recent activity log for the current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 5
+      responses:
+        '200':
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityLogEntry'
+        '401':
+          description: Unauthorized
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "JWT sent as `Authorization: Bearer <token>` or via the `access_token` cookie."
+
+  parameters:
+    IdPathParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+  schemas:
+    LoginDTO:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    Role:
+      type: string
+      enum: [ADMIN, USER]
+
+    UserDTO:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+        salt:
+          type: string
+        createdOn:
+          type: string
+        createdBy:
+          type: integer
+          format: int64
+        modifiedOn:
+          type: string
+        modifiedBy:
+          type: integer
+          format: int64
+
+    Author:
+      type: object
+      required: [name, image]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        image:
+          type: string
+        userId:
+          type: integer
+          format: int64
+        createdOn:
+          type: string
+        createdBy:
+          type: integer
+          format: int64
+        modifiedOn:
+          type: string
+        modifiedBy:
+          type: integer
+          format: int64
+
+    Book:
+      type: object
+      required: [name, author, pages, isbn, publishedDate, publisher, quantity]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        author:
+          $ref: '#/components/schemas/Author'
+        translator:
+          type: string
+        pages:
+          type: integer
+        isbn:
+          type: string
+        publishedDate:
+          type: string
+        publisher:
+          type: string
+        quantity:
+          type: integer
+        image:
+          type: string
+        genreId:
+          type: integer
+          format: int64
+        rating:
+          type: integer
+        status:
+          type: string
+          default: OWNED
+        userId:
+          type: integer
+          format: int64
+        createdOn:
+          type: string
+        createdBy:
+          type: integer
+          format: int64
+        modifiedOn:
+          type: string
+        modifiedBy:
+          type: integer
+          format: int64
+
+    Genre:
+      type: object
+      required: [name]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        userId:
+          type: integer
+          format: int64
+        createdOn:
+          type: string
+        createdBy:
+          type: integer
+          format: int64
+        modifiedOn:
+          type: string
+        modifiedBy:
+          type: integer
+          format: int64
+
+    Member:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        userId:
+          type: integer
+          format: int64
+        createdOn:
+          type: string
+        createdBy:
+          type: integer
+          format: int64
+        modifiedOn:
+          type: string
+        modifiedBy:
+          type: integer
+          format: int64
+
+    LendingStatus:
+      type: string
+      enum: [ACTIVE, RETURNED, OVERDUE]
+
+    Lending:
+      type: object
+      required: [bookId, memberId, lentDate]
+      properties:
+        id:
+          type: integer
+          format: int64
+        bookId:
+          type: integer
+          format: int64
+        memberId:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        lentDate:
+          type: string
+        expectedReturnDate:
+          type: string
+        actualReturnDate:
+          type: string
+        status:
+          $ref: '#/components/schemas/LendingStatus'
+        createdOn:
+          type: string
+        createdBy:
+          type: integer
+          format: int64
+        modifiedOn:
+          type: string
+        modifiedBy:
+          type: integer
+          format: int64
+
+    BookStats:
+      type: object
+      properties:
+        totalBooks:
+          type: integer
+          format: int64
+        addedThisMonth:
+          type: integer
+          format: int64
+
+    LentOutStats:
+      type: object
+      properties:
+        totalLentOut:
+          type: integer
+          format: int64
+        uniqueLendees:
+          type: integer
+          format: int64
+
+    OverdueStats:
+      type: object
+      properties:
+        totalOverdue:
+          type: integer
+          format: int64
+
+    RecentlyAddedBook:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        author:
+          type: string
+        genre:
+          type: string
+        status:
+          type: string
+        rating:
+          type: integer
+
+    ActivityLogEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        action:
+          type: string
+        bookName:
+          type: string
+        memberName:
+          type: string
+        occurredAt:
+          type: string
