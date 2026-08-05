@@ -23,6 +23,9 @@ object BookTable : LongIdTable("book") {
     val createdBy = long("created_by").nullable()
     val modifiedOn = varchar("modified_on", 255).nullable()
     val modifiedBy = long("modified_by").nullable()
+    val genreId = long("genre_id").nullable()
+    val rating = integer("rating").nullable()
+    val status = varchar("status", 50).nullable().default("OWNED")
 }
 
 class BookDAO(id: EntityID<Long>) : LongEntity(id) {
@@ -42,6 +45,9 @@ class BookDAO(id: EntityID<Long>) : LongEntity(id) {
     var createdBy by BookTable.createdBy
     var modifiedOn by BookTable.modifiedOn
     var modifiedBy by BookTable.modifiedBy
+    var genreId by BookTable.genreId
+    var rating by BookTable.rating
+    var status by BookTable.status
 
     fun toBookDto(): Book = Book(
         id = id.value,
@@ -54,6 +60,9 @@ class BookDAO(id: EntityID<Long>) : LongEntity(id) {
         publisher = publisher,
         quantity = quantity,
         image = image,
+        genreId = genreId,
+        rating = rating,
+        status = status,
         userId = userId,
         createdOn = createdOn,
         createdBy = createdBy,
@@ -71,6 +80,9 @@ class BookDAO(id: EntityID<Long>) : LongEntity(id) {
         this.publisher = dto.publisher
         this.quantity = dto.quantity
         this.image = dto.image
+        this.genreId = dto.genreId
+        this.rating = dto.rating
+        this.status = dto.status
         this.userId = dto.userId
         this.modifiedOn = LocalDateTime.now().toString()
         this.modifiedBy = dto.modifiedBy

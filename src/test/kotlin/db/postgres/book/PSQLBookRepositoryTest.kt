@@ -1,15 +1,11 @@
 package db.postgres.book
 
 import com.dw.db.mapping.AuthorDAO
-import com.dw.db.mapping.AuthorTable
 import com.dw.db.mapping.BookDAO
-import com.dw.db.mapping.BookTable
-import com.dw.db.mapping.UserTable
 import com.dw.db.postgres.book.PSQLBookRepository
 import com.dw.plugins.configureDatabases
 import io.ktor.server.config.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.test.*
 
@@ -31,9 +27,7 @@ class PSQLBookRepositoryTest {
 
     @AfterTest
     fun tearDown() {
-        transaction {
-            SchemaUtils.drop(BookTable, AuthorTable, UserTable)
-        }
+        transaction { exec("DROP ALL OBJECTS") }
     }
 
     private fun createAuthorAndBook(isbn: String, userId: Long) {

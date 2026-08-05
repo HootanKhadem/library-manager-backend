@@ -9,4 +9,6 @@ interface BookRepository {
     suspend fun update(id: Long, book: Book): Book?
     suspend fun delete(id: Long): Boolean
     suspend fun countByUserId(userId: Long): Long
+    suspend fun findRecentlyAdded(userId: Long, limit: Int): List<Book>
+    suspend fun countAddedThisMonth(userId: Long, yearMonth: String): Long
 }

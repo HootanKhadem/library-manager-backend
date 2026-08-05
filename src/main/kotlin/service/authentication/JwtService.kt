@@ -28,4 +28,7 @@ class JwtService(private val config: JwtConfig) {
         .withClaim("userId", user.id)
         .withExpiresAt(Date(System.currentTimeMillis() + expireTime))
         .sign(Algorithm.HMAC256(config.secret))
+
+    fun getAccessTokenExpireTime(): Int = ACCESS_TOKEN_EXPIRES
+    fun getRefreshTokenExpireTime(): Int = REFRESH_TOKEN_EXPIRES
 }

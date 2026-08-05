@@ -1,0 +1,20 @@
+openapi: 3.0.3
+info:
+  title: Library Manager API
+  version: 1.0.0
+  description: Minimal OpenAPI spec to back Swagger UI. Extend as needed.
+servers:
+  - url: /
+paths:
+  /:
+    get:
+      summary: Hello World
+      description: Public hello endpoint.
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Hello World!

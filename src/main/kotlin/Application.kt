@@ -17,6 +17,7 @@ suspend fun Application.module() {
     dependencies.resolve<UserRepository>().createAdminUser()
 
     configureJWT()
+    configureSwagger()
     configurePublicRouting()
     configureAuthenticatedRouting()
     configureAdminRouting()

@@ -1,15 +1,11 @@
 package service.author
 
-import com.dw.db.mapping.AuthorTable
-import com.dw.db.mapping.BookTable
-import com.dw.db.mapping.UserTable
 import com.dw.db.postgres.user.PSQLAuthorRepository
 import com.dw.model.dto.Author
 import com.dw.plugins.configureDatabases
 import com.dw.service.author.AuthorServiceInterfaceImpl
 import io.ktor.server.config.MapApplicationConfig
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.test.*
 
@@ -32,9 +28,7 @@ class AuthorServiceInterfaceImplTest {
 
     @AfterTest
     fun tearDown() {
-        transaction {
-            SchemaUtils.drop(BookTable, AuthorTable, UserTable)
-        }
+        transaction { exec("DROP ALL OBJECTS") }
     }
 
     // ── createAuthor ──────────────────────────────────────────────────────────
