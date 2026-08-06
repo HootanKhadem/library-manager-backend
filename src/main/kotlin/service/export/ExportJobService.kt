@@ -97,7 +97,18 @@ class ExportJobServiceImpl(
 
             exportJobRepository.markCompleted(jobId, zipFile.absolutePath)
         } catch (e: Exception) {
-            exportJobRepository.markFailed(jobId, e.message ?: "export failed")
+            try {
+                exportJobRepository.markFailed(jobId, e.message ?: "export failed")
+            } catch (markFailedException: Exception) {
+                // Best-effort: if even marking the job as failed throws (e.g. a transient
+                // DB error while already handling a failure), swallow it here rather than
+                // letting it propagate out of jobScope (which has no
+                // CoroutineExceptionHandler) and leave the job stuck in RUNNING forever.
+                System.err.println(
+                    "ExportJobService: failed to mark job $jobId as FAILED after export error " +
+                        "(${e.message}): ${markFailedException.message}"
+                )
+            }
         }
     }
 

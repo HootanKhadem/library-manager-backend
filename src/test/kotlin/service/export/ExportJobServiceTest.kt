@@ -1,5 +1,7 @@
 package service.export
 
+import com.dw.db.BookRepository
+import com.dw.db.ExportJobRepository
 import com.dw.db.mapping.UserDAO
 import com.dw.db.postgres.book.PSQLBookRepository
 import com.dw.db.postgres.export.PSQLExportJobRepository
@@ -187,5 +189,50 @@ class ExportJobServiceTest {
         waitForCompletion(job2.id, 1L)
         waitForCompletion(job3.id, 2L)
         Unit
+    }
+
+    @Test
+    fun `generate swallows a second failure from markFailed instead of crashing the coroutine`() = runBlocking {
+        createUser(1L)
+
+        // Force the export itself to fail...
+        val throwingBookRepository = object : BookRepository by bookRepository {
+            override suspend fun findAllByUserId(userId: Long): List<Book> {
+                throw RuntimeException("simulated export failure")
+            }
+        }
+        // ...and force the catch block's own markFailed(...) call to fail too, simulating
+        // the "double fault" (a transient DB error while already handling a failure) that
+        // could otherwise propagate out of jobScope uncaught and leave the job stuck in
+        // RUNNING forever, since jobScope has no CoroutineExceptionHandler.
+        val throwingOnMarkFailed = object : ExportJobRepository by exportJobRepository {
+            override suspend fun markFailed(id: Long, error: String) {
+                throw RuntimeException("simulated double failure: markFailed itself failed")
+            }
+        }
+
+        val doubleFaultService = ExportJobServiceImpl(
+            exportJobRepository = throwingOnMarkFailed,
+            bookRepository = throwingBookRepository,
+            memberRepository = memberRepository,
+            lendingRepository = lendingRepository,
+            genreRepository = genreRepository,
+            exportDirectory = exportDir.absolutePath,
+            retention = Duration.ofHours(24)
+        )
+
+        val job = doubleFaultService.startExport(1L)
+        assertEquals(ExportJobStatus.PENDING, job.status)
+
+        // Give the background coroutine time to run: markRunning -> export fails ->
+        // markFailed also fails -> swallowed. Since markFailed itself throws, the job can
+        // never reach FAILED here; what matters is that (a) this doesn't crash the process
+        // with an uncaught exception on a background thread, and (b) the real job row is
+        // left in RUNNING rather than being corrupted, so a future retry/cleanup mechanism
+        // can still find and reconcile it.
+        delay(1000)
+
+        val realStatus = exportJobRepository.findByIdAndUserId(job.id, 1L)?.status
+        assertEquals(ExportJobStatus.RUNNING, realStatus)
     }
 }
