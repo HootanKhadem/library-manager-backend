@@ -35,6 +35,10 @@ class PSQLLendingRepository : LendingRepository {
         LendingDAO.findById(id)?.toLendingDto()
     }
 
+    override suspend fun findAllByUserId(userId: Long): List<Lending> = withTransaction {
+        LendingDAO.find { LendingTable.userId eq userId }.map { it.toLendingDto() }
+    }
+
     override suspend fun findActiveByUserId(userId: Long): List<Lending> = withTransaction {
         LendingDAO.find {
             (LendingTable.userId eq userId) and (LendingTable.status eq LendingStatus.ACTIVE.name)
