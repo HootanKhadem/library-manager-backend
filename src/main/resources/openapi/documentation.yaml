@@ -16,6 +16,7 @@ tags:
   - name: member
   - name: lending
   - name: dashboard
+  - name: export
 
 paths:
   /:
@@ -562,6 +563,84 @@ paths:
         '401':
           description: Unauthorized
 
+  /api/exports:
+    post:
+      tags: [export]
+      summary: Start a CSV backup export job
+      description: Generates a zip of books.csv, members.csv, lendings.csv, and genres.csv for the current user, asynchronously.
+      security:
+        - bearerAuth: []
+      responses:
+        '202':
+          description: Export job created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportJob'
+        '401':
+          description: Unauthorized
+    get:
+      tags: [export]
+      summary: List export jobs for the current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Export jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExportJob'
+        '401':
+          description: Unauthorized
+
+  /api/exports/{id}:
+    get:
+      tags: [export]
+      summary: Get export job status
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '200':
+          description: Export job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportJob'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Job not found, or belongs to a different user
+
+  /api/exports/{id}/download:
+    get:
+      tags: [export]
+      summary: Download a completed export job's zip file
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPathParam'
+      responses:
+        '200':
+          description: Zip file stream
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized
+        '404':
+          description: Job not found, or belongs to a different user
+        '409':
+          description: Job has not reached COMPLETED yet
+        '410':
+          description: Job's retention window has expired
+
 components:
   securitySchemes:
     bearerAuth:
@@ -861,4 +940,24 @@ components:
         memberName:
           type: string
         occurredAt:
+          type: string
+
+    ExportJobStatus:
+      type: string
+      enum: [PENDING, RUNNING, COMPLETED, FAILED]
+
+    ExportJob:
+      type: object
+      required: [id, status, createdOn]
+      properties:
+        id:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/ExportJobStatus'
+        createdOn:
+          type: string
+        completedOn:
+          type: string
+        error:
           type: string

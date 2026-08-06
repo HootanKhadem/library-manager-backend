@@ -6,6 +6,7 @@ import com.dw.routes.aggregation.countUserBooks
 import com.dw.routes.aggregation.dashboardRoutes
 import com.dw.routes.author.authorRoutes
 import com.dw.routes.book.bookRoutes
+import com.dw.routes.export.exportRoutes
 import com.dw.routes.genre.genreRoutes
 import com.dw.routes.helloWorld.helloWorld
 import com.dw.routes.lending.lendingRoutes
@@ -18,6 +19,7 @@ import com.dw.service.authentication.LoginServiceInterface
 import com.dw.service.author.AuthorServiceInterface
 import com.dw.service.book.BookServiceInterface
 import com.dw.service.dashboard.DashboardServiceInterface
+import com.dw.service.export.ExportJobServiceInterface
 import com.dw.service.genre.GenreServiceInterface
 import com.dw.service.lending.LendingServiceInterface
 import com.dw.service.member.MemberServiceInterface
@@ -44,6 +46,7 @@ suspend fun Application.configureAuthenticatedRouting() {
     val lendingService = dependencies.resolve<LendingServiceInterface>()
     val dashboardService = dependencies.resolve<DashboardServiceInterface>()
     val preferenceService = dependencies.resolve<UserPreferenceServiceInterface>()
+    val exportJobService = dependencies.resolve<ExportJobServiceInterface>()
 
     routing {
         authenticate("auth-jwt") {
@@ -56,6 +59,7 @@ suspend fun Application.configureAuthenticatedRouting() {
                 countUserBooks(bookService)
                 dashboardRoutes(dashboardService)
                 preferenceRoutes(preferenceService)
+                exportRoutes(exportJobService)
             }
         }
     }

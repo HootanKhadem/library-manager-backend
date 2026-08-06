@@ -25,5 +25,8 @@ ktor:
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:mysecretpassword}
     driver: ${DB_DRIVER:org.postgresql.Driver}
+  export:
+    directory: ${EXPORT_DIRECTORY:exports}
+    retentionHours: ${EXPORT_RETENTION_HOURS:24}
 
 kind: Application
