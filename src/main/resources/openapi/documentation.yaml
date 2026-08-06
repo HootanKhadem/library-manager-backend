@@ -12,6 +12,7 @@ tags:
   - name: book
   - name: author
   - name: genre
+  - name: preferences
   - name: member
   - name: lending
   - name: dashboard
@@ -282,6 +283,44 @@ paths:
           description: Invalid genre ID
         '404':
           description: Genre not found
+
+  /api/preferences:
+    get:
+      tags: [preferences]
+      summary: Get preferences for the current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Preferences (schema defaults if none saved yet)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreference'
+        '401':
+          description: Unauthorized
+    put:
+      tags: [preferences]
+      summary: Replace preferences for the current user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPreference'
+      responses:
+        '200':
+          description: Preferences saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreference'
+        '400':
+          description: Invalid field value (bad language, date format, or non-positive loan duration)
+        '401':
+          description: Unauthorized
 
   /api/member:
     get:
@@ -676,6 +715,29 @@ components:
         modifiedBy:
           type: integer
           format: int64
+
+    UserPreference:
+      type: object
+      properties:
+        libraryName:
+          type: string
+        ownerName:
+          type: string
+        description:
+          type: string
+        defaultLoanDurationDays:
+          type: integer
+          default: 30
+        dateFormat:
+          type: string
+          default: "DD MMM YYYY"
+          enum: ["DD MMM YYYY", "MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"]
+        language:
+          type: string
+          default: "en"
+          enum: ["en", "fa"]
+        modifiedOn:
+          type: string
 
     Member:
       type: object

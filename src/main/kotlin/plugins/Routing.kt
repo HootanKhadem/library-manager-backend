@@ -11,6 +11,7 @@ import com.dw.routes.helloWorld.helloWorld
 import com.dw.routes.lending.lendingRoutes
 import com.dw.routes.member.memberRoutes
 import com.dw.routes.metrics.metrics
+import com.dw.routes.preference.preferenceRoutes
 import com.dw.routes.user.login
 import com.dw.service.admin.CreateUserServiceInterface
 import com.dw.service.authentication.LoginServiceInterface
@@ -20,6 +21,7 @@ import com.dw.service.dashboard.DashboardServiceInterface
 import com.dw.service.genre.GenreServiceInterface
 import com.dw.service.lending.LendingServiceInterface
 import com.dw.service.member.MemberServiceInterface
+import com.dw.service.preference.UserPreferenceServiceInterface
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.plugins.di.*
@@ -41,6 +43,7 @@ suspend fun Application.configureAuthenticatedRouting() {
     val memberService = dependencies.resolve<MemberServiceInterface>()
     val lendingService = dependencies.resolve<LendingServiceInterface>()
     val dashboardService = dependencies.resolve<DashboardServiceInterface>()
+    val preferenceService = dependencies.resolve<UserPreferenceServiceInterface>()
 
     routing {
         authenticate("auth-jwt") {
@@ -52,6 +55,7 @@ suspend fun Application.configureAuthenticatedRouting() {
                 lendingRoutes(lendingService)
                 countUserBooks(bookService)
                 dashboardRoutes(dashboardService)
+                preferenceRoutes(preferenceService)
             }
         }
     }

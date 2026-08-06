@@ -6,12 +6,14 @@ import com.dw.db.GenreRepository
 import com.dw.db.LendingRepository
 import com.dw.db.MemberRepository
 import com.dw.db.UserActivityLogRepository
+import com.dw.db.UserPreferenceRepository
 import com.dw.db.UserRepository
 import com.dw.db.postgres.activitylog.PSQLUserActivityLogRepository
 import com.dw.db.postgres.book.PSQLBookRepository
 import com.dw.db.postgres.genre.PSQLGenreRepository
 import com.dw.db.postgres.lending.PSQLLendingRepository
 import com.dw.db.postgres.member.PSQLMemberRepository
+import com.dw.db.postgres.preference.PSQLUserPreferenceRepository
 import com.dw.db.postgres.user.PSQLAuthorRepository
 import com.dw.db.postgres.user.PSQLUserRepository
 import com.dw.service.admin.CreateUserService
@@ -31,6 +33,8 @@ import com.dw.service.lending.LendingServiceImpl
 import com.dw.service.lending.LendingServiceInterface
 import com.dw.service.member.MemberServiceImpl
 import com.dw.service.member.MemberServiceInterface
+import com.dw.service.preference.UserPreferenceServiceImpl
+import com.dw.service.preference.UserPreferenceServiceInterface
 import io.ktor.server.application.*
 import io.ktor.server.plugins.di.*
 
@@ -47,6 +51,7 @@ fun Application.configureDependencyInjection() {
         provide<MemberRepository> { PSQLMemberRepository() }
         provide<LendingRepository> { PSQLLendingRepository() }
         provide<UserActivityLogRepository> { PSQLUserActivityLogRepository() }
+        provide<UserPreferenceRepository> { PSQLUserPreferenceRepository() }
         provide<LoginServiceInterface> { LoginServiceImpl(userRepository = resolve(), jwtService = jwtService) }
         provide<CreateUserServiceInterface> { CreateUserService(userRepository = resolve(), genreRepository = resolve()) }
         provide<AuthorServiceInterface> { AuthorServiceInterfaceImpl(authorRepository = resolve()) }
@@ -55,5 +60,6 @@ fun Application.configureDependencyInjection() {
         provide<MemberServiceInterface> { MemberServiceImpl(memberRepository = resolve()) }
         provide<LendingServiceInterface> { LendingServiceImpl(lendingRepository = resolve(), bookRepository = resolve(), activityLogRepository = resolve()) }
         provide<DashboardServiceInterface> { DashboardServiceImpl(bookRepository = resolve(), lendingRepository = resolve(), genreRepository = resolve(), activityLogRepository = resolve()) }
+        provide<UserPreferenceServiceInterface> { UserPreferenceServiceImpl(userPreferenceRepository = resolve()) }
     }
 }
