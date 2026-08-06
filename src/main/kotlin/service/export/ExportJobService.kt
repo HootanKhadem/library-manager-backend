@@ -12,6 +12,7 @@ import com.dw.model.dto.Genre
 import com.dw.model.dto.Lending
 import com.dw.model.dto.Member
 import com.dw.service.util.CsvWriter
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -46,7 +47,15 @@ class ExportJobServiceImpl(
     private val retention: Duration
 ) : ExportJobServiceInterface {
 
-    private val jobScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    companion object {
+        private val logger = org.slf4j.LoggerFactory.getLogger(ExportJobServiceImpl::class.java)
+    }
+
+    private val jobScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, throwable ->
+            logger.error("Uncaught exception in export job coroutine", throwable)
+        }
+    )
 
     override suspend fun startExport(userId: Long): ExportJob {
         val expiresOn = LocalDateTime.now().plus(retention).toString()
@@ -98,15 +107,17 @@ class ExportJobServiceImpl(
             exportJobRepository.markCompleted(jobId, zipFile.absolutePath)
         } catch (e: Exception) {
             try {
-                exportJobRepository.markFailed(jobId, e.message ?: "export failed")
+                exportJobRepository.markFailed(jobId, (e.message ?: "export failed").take(500))
             } catch (markFailedException: Exception) {
                 // Best-effort: if even marking the job as failed throws (e.g. a transient
                 // DB error while already handling a failure), swallow it here rather than
-                // letting it propagate out of jobScope (which has no
-                // CoroutineExceptionHandler) and leave the job stuck in RUNNING forever.
-                System.err.println(
+                // letting it propagate out of jobScope and leave the job stuck in RUNNING
+                // forever. Log via SLF4J so the double-fault is still visible in aggregated
+                // logs, instead of only on stderr.
+                logger.error(
                     "ExportJobService: failed to mark job $jobId as FAILED after export error " +
-                        "(${e.message}): ${markFailedException.message}"
+                        "(${e.message}): ${markFailedException.message}",
+                    markFailedException
                 )
             }
         }

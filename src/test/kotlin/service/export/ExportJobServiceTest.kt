@@ -235,4 +235,39 @@ class ExportJobServiceTest {
         val realStatus = exportJobRepository.findByIdAndUserId(job.id, 1L)?.status
         assertEquals(ExportJobStatus.RUNNING, realStatus)
     }
+
+    @Test
+    fun `generate truncates an overlong failure message before persisting it`() = runBlocking {
+        createUser(1L)
+
+        // export_job.error is VARCHAR(500) (see V4 migration). JDBC/Exposed exception
+        // messages routinely exceed that (they often embed the full SQL statement), so the
+        // service must truncate before calling markFailed or the markFailed call itself
+        // throws "value too long for type character varying(500)".
+        val longMessage = "x".repeat(600)
+        val throwingBookRepository = object : BookRepository by bookRepository {
+            override suspend fun findAllByUserId(userId: Long): List<Book> {
+                throw RuntimeException(longMessage)
+            }
+        }
+
+        val overlongFailureService = ExportJobServiceImpl(
+            exportJobRepository = exportJobRepository,
+            bookRepository = throwingBookRepository,
+            memberRepository = memberRepository,
+            lendingRepository = lendingRepository,
+            genreRepository = genreRepository,
+            exportDirectory = exportDir.absolutePath,
+            retention = Duration.ofHours(24)
+        )
+
+        val job = overlongFailureService.startExport(1L)
+        val finalStatus = waitForCompletion(job.id, 1L)
+        assertEquals(ExportJobStatus.FAILED, finalStatus)
+
+        val persistedError = exportJobRepository.findByIdAndUserId(job.id, 1L)?.error
+        assertNotNull(persistedError)
+        assertTrue(persistedError.length <= 500)
+        assertEquals(longMessage.take(500), persistedError)
+    }
 }
