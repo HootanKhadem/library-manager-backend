@@ -59,4 +59,45 @@ class PSQLBookRepositoryTest {
         assertEquals(1, repository.countByUserId(2L))
         assertEquals(0, repository.countByUserId(3L))
     }
+
+    @Test
+    fun `findAllByUserIdPaged returns first page ordered by id`() = runBlocking {
+        createAuthorAndBook("isbn-p1", 5L)
+        createAuthorAndBook("isbn-p2", 5L)
+        createAuthorAndBook("isbn-p3", 5L)
+
+        val page1 = repository.findAllByUserIdPaged(5L, page = 1, pageSize = 2)
+        assertEquals(2, page1.size)
+        assertEquals("Book isbn-p1", page1[0].name)
+        assertEquals("Book isbn-p2", page1[1].name)
+    }
+
+    @Test
+    fun `findAllByUserIdPaged returns second page`() = runBlocking {
+        createAuthorAndBook("isbn-p1", 5L)
+        createAuthorAndBook("isbn-p2", 5L)
+        createAuthorAndBook("isbn-p3", 5L)
+
+        val page2 = repository.findAllByUserIdPaged(5L, page = 2, pageSize = 2)
+        assertEquals(1, page2.size)
+        assertEquals("Book isbn-p3", page2[0].name)
+    }
+
+    @Test
+    fun `findAllByUserIdPaged returns empty list beyond last page`() = runBlocking {
+        createAuthorAndBook("isbn-p1", 5L)
+
+        val page3 = repository.findAllByUserIdPaged(5L, page = 3, pageSize = 2)
+        assertEquals(0, page3.size)
+    }
+
+    @Test
+    fun `findAllByUserIdPaged filters by userId`() = runBlocking {
+        createAuthorAndBook("isbn-u1", 1L)
+        createAuthorAndBook("isbn-u2", 2L)
+
+        val page1 = repository.findAllByUserIdPaged(1L, page = 1, pageSize = 10)
+        assertEquals(1, page1.size)
+        assertEquals("Book isbn-u1", page1[0].name)
+    }
 }

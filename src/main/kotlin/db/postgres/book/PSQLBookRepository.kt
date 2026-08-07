@@ -44,6 +44,14 @@ class PSQLBookRepository : BookRepository {
         BookDAO.find { BookTable.userId eq userId }.map { it.toBookDto() }
     }
 
+    override suspend fun findAllByUserIdPaged(userId: Long, page: Int, pageSize: Int): List<Book> = withTransaction {
+        BookDAO.find { BookTable.userId eq userId }
+            .orderBy(BookTable.id to SortOrder.ASC)
+            .limit(pageSize)
+            .offset((page - 1).toLong() * pageSize)
+            .map { it.toBookDto() }
+    }
+
     override suspend fun update(id: Long, book: Book): Book? = withTransaction {
         val bookDAO = BookDAO.findById(id) ?: return@withTransaction null
         val authorId = book.author.id
