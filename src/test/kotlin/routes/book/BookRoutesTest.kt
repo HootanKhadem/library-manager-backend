@@ -169,4 +169,208 @@ class BookRoutesTest : BaseRouteTest() {
 
         cleanup()
     }
+
+    // ── GET /api/book (paginated) ────────────────────────────────────────────
+
+    @Test
+    fun `GET api book returns first page of books for user`() = testApplication {
+        setupLibraryApp()
+        val token = createToken(userId = 20L)
+
+        client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(bookPayload(isbn = "isbn-list-1", userId = 20L)))
+        }
+        client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(bookPayload(isbn = "isbn-list-2", userId = 20L)))
+        }
+
+        val response = client.get("/api/book?page=1&pageSize=1") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        val json = gson.fromJson(response.bodyAsText(), com.google.gson.JsonObject::class.java)
+        assertEquals(1, json.getAsJsonArray("items").size())
+        assertEquals(1, json.get("page").asInt)
+        assertEquals(1, json.get("pageSize").asInt)
+        assertEquals(2, json.get("totalItems").asInt)
+        assertEquals(2, json.get("totalPages").asInt)
+
+        cleanup()
+    }
+
+    @Test
+    fun `GET api book defaults to page 1 and pageSize 20 when params omitted`() = testApplication {
+        setupLibraryApp()
+        val token = createToken(userId = 21L)
+
+        val response = client.get("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        val json = gson.fromJson(response.bodyAsText(), com.google.gson.JsonObject::class.java)
+        assertEquals(1, json.get("page").asInt)
+        assertEquals(20, json.get("pageSize").asInt)
+
+        cleanup()
+    }
+
+    @Test
+    fun `GET api book clamps pageSize above 100`() = testApplication {
+        setupLibraryApp()
+        val token = createToken(userId = 22L)
+
+        val response = client.get("/api/book?pageSize=500") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        val json = gson.fromJson(response.bodyAsText(), com.google.gson.JsonObject::class.java)
+        assertEquals(100, json.get("pageSize").asInt)
+
+        cleanup()
+    }
+
+    @Test
+    fun `GET api book returns 401 when unauthenticated`() = testApplication {
+        setupLibraryApp()
+
+        val response = client.get("/api/book")
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+
+        cleanup()
+    }
+
+    // ── PUT /api/book id ──────────────────────────────────────────────────────
+
+    @Test
+    fun `PUT api book id updates book when caller owns it`() = testApplication {
+        setupLibraryApp()
+        val token = createToken(userId = 30L)
+
+        val createResponse = client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(bookPayload(isbn = "isbn-put-owner", userId = 30L)))
+        }
+        val created = gson.fromJson(createResponse.bodyAsText(), Book::class.java)
+
+        val response = client.put("/api/book/${created.id}") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(created.copy(name = "Updated Title")))
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        val updated = gson.fromJson(response.bodyAsText(), Book::class.java)
+        assertEquals("Updated Title", updated.name)
+
+        cleanup()
+    }
+
+    @Test
+    fun `PUT api book id returns 404 when caller does not own book`() = testApplication {
+        setupLibraryApp()
+        val ownerToken = createToken(userId = 40L)
+        val otherToken = createToken(userId = 41L)
+
+        val createResponse = client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $ownerToken")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(bookPayload(isbn = "isbn-put-not-owner", userId = 40L)))
+        }
+        val created = gson.fromJson(createResponse.bodyAsText(), Book::class.java)
+
+        val response = client.put("/api/book/${created.id}") {
+            header(HttpHeaders.Authorization, "Bearer $otherToken")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(created.copy(name = "Hacked Title")))
+        }
+
+        assertEquals(HttpStatusCode.NotFound, response.status)
+
+        cleanup()
+    }
+
+    @Test
+    fun `PUT api book id returns 400 for invalid id`() = testApplication {
+        setupLibraryApp()
+        val token = createToken()
+
+        val response = client.put("/api/book/not-a-number") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(bookPayload()))
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+
+        cleanup()
+    }
+
+    // ── DELETE /api/book id ───────────────────────────────────────────────────
+
+    @Test
+    fun `DELETE api book id removes book when caller owns it`() = testApplication {
+        setupLibraryApp()
+        val token = createToken(userId = 50L)
+
+        val createResponse = client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(bookPayload(isbn = "isbn-delete-owner", userId = 50L)))
+        }
+        val created = gson.fromJson(createResponse.bodyAsText(), Book::class.java)
+
+        val response = client.delete("/api/book/${created.id}") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.NoContent, response.status)
+
+        val getResponse = client.get("/api/book/${created.id}") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.NotFound, getResponse.status)
+
+        cleanup()
+    }
+
+    @Test
+    fun `DELETE api book id returns 404 when caller does not own book`() = testApplication {
+        setupLibraryApp()
+        val ownerToken = createToken(userId = 60L)
+        val otherToken = createToken(userId = 61L)
+
+        val createResponse = client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $ownerToken")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(bookPayload(isbn = "isbn-delete-not-owner", userId = 60L)))
+        }
+        val created = gson.fromJson(createResponse.bodyAsText(), Book::class.java)
+
+        val response = client.delete("/api/book/${created.id}") {
+            header(HttpHeaders.Authorization, "Bearer $otherToken")
+        }
+        assertEquals(HttpStatusCode.NotFound, response.status)
+
+        cleanup()
+    }
+
+    @Test
+    fun `DELETE api book id returns 400 for invalid id`() = testApplication {
+        setupLibraryApp()
+        val token = createToken()
+
+        val response = client.delete("/api/book/not-a-number") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+
+        cleanup()
+    }
 }
