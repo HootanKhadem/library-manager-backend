@@ -313,6 +313,19 @@ class BookRoutesTest : BaseRouteTest() {
         cleanup()
     }
 
+    @Test
+    fun `PUT api book id returns 401 when unauthenticated`() = testApplication {
+        setupLibraryApp()
+
+        val response = client.put("/api/book/1") {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(bookPayload()))
+        }
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+
+        cleanup()
+    }
+
     // ── DELETE /api/book id ───────────────────────────────────────────────────
 
     @Test
@@ -370,6 +383,16 @@ class BookRoutesTest : BaseRouteTest() {
             header(HttpHeaders.Authorization, "Bearer $token")
         }
         assertEquals(HttpStatusCode.BadRequest, response.status)
+
+        cleanup()
+    }
+
+    @Test
+    fun `DELETE api book id returns 401 when unauthenticated`() = testApplication {
+        setupLibraryApp()
+
+        val response = client.delete("/api/book/1")
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
 
         cleanup()
     }
