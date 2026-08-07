@@ -11,8 +11,8 @@ interface BookServiceInterface {
     suspend fun getAllBooks(userId: Long): List<Book>
     suspend fun getAllBooksPaged(userId: Long, page: Int, pageSize: Int): PagedResponse<Book>
     suspend fun createBook(book: Book): Book
-    suspend fun updateBook(id: Long, book: Book): Book?
-    suspend fun deleteBook(id: Long): Boolean
+    suspend fun updateBook(id: Long, book: Book, requesterId: Long): Book?
+    suspend fun deleteBook(id: Long, requesterId: Long): Boolean
     suspend fun countBooks(userId: Long): Long
 }
 
@@ -44,11 +44,17 @@ class BookServiceImpl(
         )
     }
 
-    override suspend fun updateBook(id: Long, book: Book): Book? {
+    override suspend fun updateBook(id: Long, book: Book, requesterId: Long): Book? {
+        val existing = bookRepository.findById(id) ?: return null
+        if (existing.userId != requesterId) return null
         val resolvedAuthor = authorService.findOrCreateAuthor(book.author, book.userId)
         return bookRepository.update(id, book.copy(author = resolvedAuthor))
     }
 
-    override suspend fun deleteBook(id: Long): Boolean = bookRepository.delete(id)
+    override suspend fun deleteBook(id: Long, requesterId: Long): Boolean {
+        val existing = bookRepository.findById(id) ?: return false
+        if (existing.userId != requesterId) return false
+        return bookRepository.delete(id)
+    }
     override suspend fun countBooks(userId: Long): Long = bookRepository.countByUserId(userId)
 }

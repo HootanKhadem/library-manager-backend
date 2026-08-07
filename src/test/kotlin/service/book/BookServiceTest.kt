@@ -201,18 +201,76 @@ class BookServiceTest {
     // ── deleteBook ────────────────────────────────────────────────────────────
 
     @Test
-    fun `deleteBook removes book`() = runBlocking {
-        val created = bookService.createBook(bookRequest(isbn = "isbn-delete"))
+    fun `deleteBook removes book when requester is the owner`() {
+        runBlocking {
+            val created = bookService.createBook(bookRequest(isbn = "isbn-delete", userId = 1L))
 
-        val deleted = bookService.deleteBook(created.id!!)
-        assertTrue(deleted)
-        assertNull(bookService.getBookById(created.id!!))
+            val deleted = bookService.deleteBook(created.id!!, requesterId = 1L)
+            assertTrue(deleted)
+            assertNull(bookService.getBookById(created.id!!))
+        }
     }
 
     @Test
-    fun `deleteBook returns false when book not exists`() = runBlocking {
-        val deleted = bookService.deleteBook(9999L)
-        assertFalse(deleted)
+    fun `deleteBook returns false when book not exists`() {
+        runBlocking {
+            val deleted = bookService.deleteBook(9999L, requesterId = 1L)
+            assertFalse(deleted)
+        }
+    }
+
+    @Test
+    fun `deleteBook returns false for non-owner`() {
+        runBlocking {
+            val created = bookService.createBook(bookRequest(isbn = "isbn-delete-not-owner", userId = 1L))
+
+            val deleted = bookService.deleteBook(created.id!!, requesterId = 2L)
+            assertFalse(deleted)
+            assertNotNull(bookService.getBookById(created.id!!))
+        }
+    }
+
+    // ── updateBook ────────────────────────────────────────────────────────────
+
+    @Test
+    fun `updateBook updates book when requester is the owner`() {
+        runBlocking {
+            val created = bookService.createBook(bookRequest(isbn = "isbn-update-owner", userId = 1L))
+
+            val updated = bookService.updateBook(
+                created.id!!,
+                created.copy(name = "Updated Name", userId = 1L),
+                requesterId = 1L
+            )
+
+            assertNotNull(updated)
+            assertEquals("Updated Name", updated.name)
+        }
+    }
+
+    @Test
+    fun `updateBook returns null for non-owner`() {
+        runBlocking {
+            val created = bookService.createBook(bookRequest(isbn = "isbn-update-not-owner", userId = 1L))
+
+            val updated = bookService.updateBook(
+                created.id!!,
+                created.copy(name = "Hacked Name", userId = 1L),
+                requesterId = 2L
+            )
+
+            assertNull(updated)
+            assertEquals("Test Book", bookService.getBookById(created.id!!)?.name)
+        }
+    }
+
+    @Test
+    fun `updateBook returns null when book does not exist`() {
+        runBlocking {
+            val request = bookRequest(isbn = "isbn-update-missing", userId = 1L)
+            val updated = bookService.updateBook(9999L, request, requesterId = 1L)
+            assertNull(updated)
+        }
     }
 
     // ── countBooks ────────────────────────────────────────────────────────────
