@@ -172,6 +172,32 @@ class BookServiceTest {
         assertTrue(books.all { it.userId == 1L })
     }
 
+    // ── getAllBooksPaged ──────────────────────────────────────────────────────
+
+    @Test
+    fun `getAllBooksPaged returns paged wrapper with correct metadata`() = runBlocking {
+        bookService.createBook(bookRequest(isbn = "isbn-page-1", userId = 50L))
+        bookService.createBook(bookRequest(isbn = "isbn-page-2", userId = 50L))
+        bookService.createBook(bookRequest(isbn = "isbn-page-3", userId = 50L))
+
+        val result = bookService.getAllBooksPaged(50L, page = 1, pageSize = 2)
+
+        assertEquals(2, result.items.size)
+        assertEquals(1, result.page)
+        assertEquals(2, result.pageSize)
+        assertEquals(3, result.totalItems)
+        assertEquals(2, result.totalPages)
+    }
+
+    @Test
+    fun `getAllBooksPaged returns empty items with totalPages of 1 when user has no books`() = runBlocking {
+        val result = bookService.getAllBooksPaged(999L, page = 1, pageSize = 20)
+
+        assertEquals(0, result.items.size)
+        assertEquals(0, result.totalItems)
+        assertEquals(1, result.totalPages)
+    }
+
     // ── deleteBook ────────────────────────────────────────────────────────────
 
     @Test
