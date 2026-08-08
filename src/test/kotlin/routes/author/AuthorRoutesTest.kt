@@ -98,4 +98,45 @@ class AuthorRoutesTest : BaseRouteTest() {
 
         cleanup()
     }
+
+    // ── GET /api/author (paginated) ──────────────────────────────────────────
+
+    @Test
+    fun `GET api author returns first page of authors for user`() = testApplication {
+        setupLibraryApp()
+        val token = createToken(userId = 70L)
+
+        client.post("/api/author") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(Author(name = "List Author 1", image = "1.jpg", userId = 70L)))
+        }
+        client.post("/api/author") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(Author(name = "List Author 2", image = "2.jpg", userId = 70L)))
+        }
+
+        val response = client.get("/api/author?page=1&pageSize=1") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        val json = gson.fromJson(response.bodyAsText(), com.google.gson.JsonObject::class.java)
+        assertEquals(1, json.getAsJsonArray("items").size())
+        assertEquals(2, json.get("totalItems").asInt)
+        assertEquals(2, json.get("totalPages").asInt)
+
+        cleanup()
+    }
+
+    @Test
+    fun `GET api author returns 401 when unauthenticated`() = testApplication {
+        setupLibraryApp()
+
+        val response = client.get("/api/author")
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+
+        cleanup()
+    }
 }
