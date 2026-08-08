@@ -73,4 +73,8 @@ class PSQLLendingRepository : LendingRepository {
             modifiedOn = LocalDateTime.now().toString()
         }?.toLendingDto()
     }
+
+    override suspend fun existsByBookId(bookId: Long): Boolean = withTransaction {
+        LendingDAO.find { LendingTable.bookId eq bookId }.any()
+    }
 }

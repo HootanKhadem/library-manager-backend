@@ -2,6 +2,7 @@ package com.dw.routes.book
 
 import com.dw.model.dto.Book
 import com.dw.routes.pagination.pageParams
+import com.dw.service.book.BookHasLendingHistoryException
 import com.dw.service.book.BookServiceInterface
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.jwt.JWTPrincipal
@@ -52,7 +53,11 @@ fun Route.bookRoutes(bookService: BookServiceInterface) {
             ?: return@delete call.respond(HttpStatusCode.Unauthorized)
         val id = call.parameters["id"]?.toLongOrNull()
             ?: return@delete call.respond(HttpStatusCode.BadRequest, "Invalid book ID")
-        val deleted = bookService.deleteBook(id, userId)
+        val deleted = try {
+            bookService.deleteBook(id, userId)
+        } catch (e: BookHasLendingHistoryException) {
+            return@delete call.respond(HttpStatusCode.Conflict, "Book has lending history and cannot be deleted")
+        }
         if (deleted) call.respond(HttpStatusCode.NoContent)
         else call.respond(HttpStatusCode.NotFound, "Book not found")
     }

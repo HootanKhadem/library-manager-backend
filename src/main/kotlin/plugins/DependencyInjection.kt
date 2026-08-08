@@ -62,7 +62,7 @@ fun Application.configureDependencyInjection() {
         provide<LoginServiceInterface> { LoginServiceImpl(userRepository = resolve(), jwtService = jwtService) }
         provide<CreateUserServiceInterface> { CreateUserService(userRepository = resolve(), genreRepository = resolve()) }
         provide<AuthorServiceInterface> { AuthorServiceInterfaceImpl(authorRepository = resolve()) }
-        provide<BookServiceInterface> { BookServiceImpl(bookRepository = resolve(), authorService = resolve()) }
+        provide<BookServiceInterface> { BookServiceImpl(bookRepository = resolve(), authorService = resolve(), lendingRepository = resolve()) }
         provide<GenreServiceInterface> { GenreServiceImpl(genreRepository = resolve()) }
         provide<MemberServiceInterface> { MemberServiceImpl(memberRepository = resolve()) }
         provide<LendingServiceInterface> { LendingServiceImpl(lendingRepository = resolve(), bookRepository = resolve(), activityLogRepository = resolve()) }

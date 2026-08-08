@@ -1,11 +1,16 @@
 package service.book
 
 import com.dw.db.postgres.book.PSQLBookRepository
+import com.dw.db.postgres.lending.PSQLLendingRepository
+import com.dw.db.postgres.member.PSQLMemberRepository
 import com.dw.db.postgres.user.PSQLAuthorRepository
 import com.dw.model.dto.Author
 import com.dw.model.dto.Book
+import com.dw.model.dto.Lending
+import com.dw.model.dto.Member
 import com.dw.plugins.configureDatabases
 import com.dw.service.author.AuthorServiceInterfaceImpl
+import com.dw.service.book.BookHasLendingHistoryException
 import com.dw.service.book.BookServiceImpl
 import io.ktor.server.config.MapApplicationConfig
 import kotlinx.coroutines.runBlocking
@@ -24,7 +29,9 @@ class BookServiceTest {
     private val authorRepository = PSQLAuthorRepository()
     private val authorService = AuthorServiceInterfaceImpl(authorRepository)
     private val bookRepository = PSQLBookRepository()
-    private val bookService = BookServiceImpl(bookRepository, authorService)
+    private val lendingRepository = PSQLLendingRepository()
+    private val memberRepository = PSQLMemberRepository()
+    private val bookService = BookServiceImpl(bookRepository, authorService, lendingRepository)
 
     @BeforeTest
     fun setup() {
@@ -230,6 +237,30 @@ class BookServiceTest {
         }
     }
 
+    @Test
+    fun `deleteBook throws BookHasLendingHistoryException when book has lending history`() {
+        runBlocking {
+            val created = bookService.createBook(bookRequest(isbn = "isbn-delete-lent", userId = 1L))
+            val member = memberRepository.save(
+                Member(name = "Borrower", email = "borrower@example.com", password = "pass", userId = 1L)
+            )
+            lendingRepository.save(
+                Lending(
+                    bookId = created.id!!,
+                    memberId = member.id,
+                    userId = 1L,
+                    lentDate = "2026-01-01"
+                )
+            )
+
+            assertFailsWith<BookHasLendingHistoryException> {
+                bookService.deleteBook(created.id!!, requesterId = 1L)
+            }
+            // book must remain untouched
+            assertNotNull(bookService.getBookById(created.id!!))
+        }
+    }
+
     // ── updateBook ────────────────────────────────────────────────────────────
 
     @Test
@@ -270,6 +301,58 @@ class BookServiceTest {
             val request = bookRequest(isbn = "isbn-update-missing", userId = 1L)
             val updated = bookService.updateBook(9999L, request, requesterId = 1L)
             assertNull(updated)
+        }
+    }
+
+    @Test
+    fun `updateBook ignores userId supplied in the request body and keeps the verified owner`() {
+        runBlocking {
+            val created = bookService.createBook(bookRequest(isbn = "isbn-update-userid-spoof", userId = 1L))
+
+            val updated = bookService.updateBook(
+                created.id!!,
+                created.copy(name = "Retitled", userId = 999L),
+                requesterId = 1L
+            )
+
+            assertNotNull(updated)
+            assertEquals(1L, updated.userId)
+            assertEquals(1L, bookService.getBookById(created.id!!)?.userId)
+        }
+    }
+
+    @Test
+    fun `updateBook pins modifiedBy to the requester regardless of body`() {
+        runBlocking {
+            val created = bookService.createBook(bookRequest(isbn = "isbn-update-modifiedby", userId = 1L))
+
+            val updated = bookService.updateBook(
+                created.id!!,
+                created.copy(name = "Retitled", modifiedBy = 999L),
+                requesterId = 1L
+            )
+
+            assertNotNull(updated)
+            assertEquals(1L, updated.modifiedBy)
+        }
+    }
+
+    @Test
+    fun `updateBook creates new author owned by the verified owner, not the body userId`() {
+        runBlocking {
+            val created = bookService.createBook(bookRequest(isbn = "isbn-update-author-owner", userId = 1L))
+
+            val updated = bookService.updateBook(
+                created.id!!,
+                created.copy(
+                    author = Author(name = "Newly Created During Update", image = "new.jpg"),
+                    userId = 999L
+                ),
+                requesterId = 1L
+            )
+
+            assertNotNull(updated)
+            assertEquals(1L, updated.author.userId)
         }
     }
 

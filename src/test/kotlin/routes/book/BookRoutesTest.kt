@@ -2,6 +2,8 @@ package routes.book
 
 import com.dw.model.dto.Author
 import com.dw.model.dto.Book
+import com.dw.model.dto.Lending
+import com.dw.model.dto.Member
 import com.dw.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -370,6 +372,45 @@ class BookRoutesTest : BaseRouteTest() {
             header(HttpHeaders.Authorization, "Bearer $otherToken")
         }
         assertEquals(HttpStatusCode.NotFound, response.status)
+
+        cleanup()
+    }
+
+    @Test
+    fun `DELETE api book id returns 409 when book has lending history`() = testApplication {
+        setupLibraryApp()
+        val token = createToken(userId = 70L)
+
+        val createResponse = client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(bookPayload(isbn = "isbn-delete-lent-route", userId = 70L)))
+        }
+        val created = gson.fromJson(createResponse.bodyAsText(), Book::class.java)
+
+        val memberResponse = client.post("/api/member") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(Member(name = "Borrower", email = "borrower-route@example.com", password = "pass")))
+        }
+        val member = gson.fromJson(memberResponse.bodyAsText(), Member::class.java)
+
+        client.post("/api/lending") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(Lending(bookId = created.id!!, memberId = member.id, lentDate = "2026-06-16")))
+        }
+
+        val response = client.delete("/api/book/${created.id}") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.Conflict, response.status)
+
+        // book must still exist
+        val getResponse = client.get("/api/book/${created.id}") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+        assertEquals(HttpStatusCode.OK, getResponse.status)
 
         cleanup()
     }

@@ -11,4 +11,5 @@ interface LendingRepository {
     suspend fun countUniqueLendeesByUserId(userId: Long): Long
     suspend fun countOverdueByUserId(userId: Long): Long
     suspend fun markReturned(id: Long, returnedDate: String): Lending?
+    suspend fun existsByBookId(bookId: Long): Boolean
 }
