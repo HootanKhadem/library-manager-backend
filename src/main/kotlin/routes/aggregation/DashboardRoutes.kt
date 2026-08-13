@@ -2,13 +2,11 @@ package com.dw.routes.aggregation
 
 import com.dw.service.book.BookServiceInterface
 import com.dw.service.dashboard.DashboardServiceInterface
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.auth.jwt.JWTPrincipal
-import io.ktor.server.auth.principal
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.route
+import io.ktor.http.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 
 fun Route.countUserBooks(bookService: BookServiceInterface) {
     get("/count-user-books") {
@@ -20,7 +18,7 @@ fun Route.countUserBooks(bookService: BookServiceInterface) {
 }
 
 fun Route.dashboardRoutes(dashboardService: DashboardServiceInterface) {
-    route("/dashboard") {
+    route("/api/dashboard") {
         get("/stats/books") {
             val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong()
                 ?: return@get call.respond(HttpStatusCode.Unauthorized)

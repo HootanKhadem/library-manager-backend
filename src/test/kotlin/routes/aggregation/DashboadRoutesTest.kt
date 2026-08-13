@@ -3,6 +3,7 @@ package com.dw.routes.aggregation
 import com.dw.db.mapping.AuthorDAO
 import com.dw.db.mapping.BookDAO
 import com.dw.model.dto.Role
+import com.google.gson.JsonArray
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -10,7 +11,6 @@ import io.ktor.server.testing.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.Test
 import routes.BaseRouteTest
-import com.google.gson.JsonArray
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -68,7 +68,7 @@ class DashboardRoutesTest : BaseRouteTest() {
         setupBooksForUser(userId, 2)
         val token = createToken(userId = userId, role = Role.USER)
 
-        val response = client.get("/dashboard/stats/books") {
+        val response = client.get("/api/dashboard/stats/books") {
             header(HttpHeaders.Authorization, "Bearer $token")
         }
 
@@ -83,7 +83,7 @@ class DashboardRoutesTest : BaseRouteTest() {
         setupLibraryApp()
         val token = createToken(userId = 40L, role = Role.USER)
 
-        val response = client.get("/dashboard/stats/lent-out") {
+        val response = client.get("/api/dashboard/stats/lent-out") {
             header(HttpHeaders.Authorization, "Bearer $token")
         }
 
@@ -99,7 +99,7 @@ class DashboardRoutesTest : BaseRouteTest() {
         setupLibraryApp()
         val token = createToken(userId = 50L, role = Role.USER)
 
-        val response = client.get("/dashboard/stats/overdue") {
+        val response = client.get("/api/dashboard/stats/overdue") {
             header(HttpHeaders.Authorization, "Bearer $token")
         }
 
@@ -117,7 +117,7 @@ class DashboardRoutesTest : BaseRouteTest() {
         setupBooksForUser(userId, 3)
         val token = createToken(userId = userId, role = Role.USER)
 
-        val response = client.get("/dashboard/recently-added?limit=3") {
+        val response = client.get("/api/dashboard/recently-added?limit=3") {
             header(HttpHeaders.Authorization, "Bearer $token")
         }
 
@@ -131,7 +131,7 @@ class DashboardRoutesTest : BaseRouteTest() {
         setupLibraryApp()
         val token = createToken(userId = 70L, role = Role.USER)
 
-        val response = client.get("/dashboard/recent-activity?limit=5") {
+        val response = client.get("/api/dashboard/recent-activity?limit=5") {
             header(HttpHeaders.Authorization, "Bearer $token")
         }
 
@@ -145,11 +145,11 @@ class DashboardRoutesTest : BaseRouteTest() {
     fun testDashboardEndpointsReturn401WithoutToken() = testApplication {
         setupLibraryApp()
         listOf(
-            "/dashboard/stats/books",
-            "/dashboard/stats/lent-out",
-            "/dashboard/stats/overdue",
-            "/dashboard/recently-added",
-            "/dashboard/recent-activity"
+            "/api/dashboard/stats/books",
+            "/api/dashboard/stats/lent-out",
+            "/api/dashboard/stats/overdue",
+            "/api/dashboard/recently-added",
+            "/api/dashboard/recent-activity"
         ).forEach { path ->
             val response = client.get(path)
             assertEquals(HttpStatusCode.Unauthorized, response.status, "Expected 401 for $path")

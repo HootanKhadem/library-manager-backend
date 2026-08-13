@@ -557,7 +557,7 @@ paths:
         '404':
           description: Lending not found
 
-  /dashboard/stats/books:
+  /api/dashboard/stats/books:
     get:
       tags: [dashboard]
       summary: Book stats for the current user
@@ -573,7 +573,7 @@ paths:
         '401':
           description: Unauthorized
 
-  /dashboard/stats/lent-out:
+  /api/dashboard/stats/lent-out:
     get:
       tags: [dashboard]
       summary: Lent-out stats for the current user
@@ -589,7 +589,7 @@ paths:
         '401':
           description: Unauthorized
 
-  /dashboard/stats/overdue:
+  /api/dashboard/stats/overdue:
     get:
       tags: [dashboard]
       summary: Overdue stats for the current user
@@ -605,7 +605,7 @@ paths:
         '401':
           description: Unauthorized
 
-  /dashboard/recently-added:
+  /api/dashboard/recently-added:
     get:
       tags: [dashboard]
       summary: Recently added books for the current user
@@ -630,7 +630,7 @@ paths:
         '401':
           description: Unauthorized
 
-  /dashboard/recent-activity:
+  /api/dashboard/recent-activity:
     get:
       tags: [dashboard]
       summary: Recent activity log for the current user
