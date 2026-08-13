@@ -1,18 +1,19 @@
 package service.book
 
-import com.dw.db.mapping.AuthorTable
-import com.dw.db.mapping.BookTable
-import com.dw.db.mapping.UserTable
 import com.dw.db.postgres.book.PSQLBookRepository
+import com.dw.db.postgres.lending.PSQLLendingRepository
+import com.dw.db.postgres.member.PSQLMemberRepository
 import com.dw.db.postgres.user.PSQLAuthorRepository
 import com.dw.model.dto.Author
 import com.dw.model.dto.Book
+import com.dw.model.dto.Lending
+import com.dw.model.dto.Member
 import com.dw.plugins.configureDatabases
 import com.dw.service.author.AuthorServiceInterfaceImpl
+import com.dw.service.book.BookHasLendingHistoryException
 import com.dw.service.book.BookServiceImpl
 import io.ktor.server.config.MapApplicationConfig
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.test.*
 
@@ -28,7 +29,9 @@ class BookServiceTest {
     private val authorRepository = PSQLAuthorRepository()
     private val authorService = AuthorServiceInterfaceImpl(authorRepository)
     private val bookRepository = PSQLBookRepository()
-    private val bookService = BookServiceImpl(bookRepository, authorService)
+    private val lendingRepository = PSQLLendingRepository()
+    private val memberRepository = PSQLMemberRepository()
+    private val bookService = BookServiceImpl(bookRepository, authorService, lendingRepository)
 
     @BeforeTest
     fun setup() {
@@ -37,9 +40,7 @@ class BookServiceTest {
 
     @AfterTest
     fun tearDown() {
-        transaction {
-            SchemaUtils.drop(BookTable, AuthorTable, UserTable)
-        }
+        transaction { exec("DROP ALL OBJECTS") }
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
@@ -178,20 +179,193 @@ class BookServiceTest {
         assertTrue(books.all { it.userId == 1L })
     }
 
-    // ── deleteBook ────────────────────────────────────────────────────────────
+    // ── getAllBooksPaged ──────────────────────────────────────────────────────
 
     @Test
-    fun `deleteBook removes book`() = runBlocking {
-        val created = bookService.createBook(bookRequest(isbn = "isbn-delete"))
+    fun `getAllBooksPaged returns paged wrapper with correct metadata`() = runBlocking {
+        bookService.createBook(bookRequest(isbn = "isbn-page-1", userId = 50L))
+        bookService.createBook(bookRequest(isbn = "isbn-page-2", userId = 50L))
+        bookService.createBook(bookRequest(isbn = "isbn-page-3", userId = 50L))
 
-        val deleted = bookService.deleteBook(created.id!!)
-        assertTrue(deleted)
-        assertNull(bookService.getBookById(created.id!!))
+        val result = bookService.getAllBooksPaged(50L, page = 1, pageSize = 2)
+
+        assertEquals(2, result.items.size)
+        assertEquals(1, result.page)
+        assertEquals(2, result.pageSize)
+        assertEquals(3, result.totalItems)
+        assertEquals(2, result.totalPages)
     }
 
     @Test
-    fun `deleteBook returns false when book not exists`() = runBlocking {
-        val deleted = bookService.deleteBook(9999L)
-        assertFalse(deleted)
+    fun `getAllBooksPaged returns empty items with totalPages of 1 when user has no books`() = runBlocking {
+        val result = bookService.getAllBooksPaged(999L, page = 1, pageSize = 20)
+
+        assertEquals(0, result.items.size)
+        assertEquals(0, result.totalItems)
+        assertEquals(1, result.totalPages)
+    }
+
+    // ── deleteBook ────────────────────────────────────────────────────────────
+
+    @Test
+    fun `deleteBook removes book when requester is the owner`() {
+        runBlocking {
+            val created = bookService.createBook(bookRequest(isbn = "isbn-delete", userId = 1L))
+
+            val deleted = bookService.deleteBook(created.id!!, requesterId = 1L)
+            assertTrue(deleted)
+            assertNull(bookService.getBookById(created.id!!))
+        }
+    }
+
+    @Test
+    fun `deleteBook returns false when book not exists`() {
+        runBlocking {
+            val deleted = bookService.deleteBook(9999L, requesterId = 1L)
+            assertFalse(deleted)
+        }
+    }
+
+    @Test
+    fun `deleteBook returns false for non-owner`() {
+        runBlocking {
+            val created = bookService.createBook(bookRequest(isbn = "isbn-delete-not-owner", userId = 1L))
+
+            val deleted = bookService.deleteBook(created.id!!, requesterId = 2L)
+            assertFalse(deleted)
+            assertNotNull(bookService.getBookById(created.id!!))
+        }
+    }
+
+    @Test
+    fun `deleteBook throws BookHasLendingHistoryException when book has lending history`() {
+        runBlocking {
+            val created = bookService.createBook(bookRequest(isbn = "isbn-delete-lent", userId = 1L))
+            val member = memberRepository.save(
+                Member(name = "Borrower", email = "borrower@example.com", password = "pass", userId = 1L)
+            )
+            lendingRepository.save(
+                Lending(
+                    bookId = created.id!!,
+                    memberId = member.id,
+                    userId = 1L,
+                    lentDate = "2026-01-01"
+                )
+            )
+
+            assertFailsWith<BookHasLendingHistoryException> {
+                bookService.deleteBook(created.id!!, requesterId = 1L)
+            }
+            // book must remain untouched
+            assertNotNull(bookService.getBookById(created.id!!))
+        }
+    }
+
+    // ── updateBook ────────────────────────────────────────────────────────────
+
+    @Test
+    fun `updateBook updates book when requester is the owner`() {
+        runBlocking {
+            val created = bookService.createBook(bookRequest(isbn = "isbn-update-owner", userId = 1L))
+
+            val updated = bookService.updateBook(
+                created.id!!,
+                created.copy(name = "Updated Name", userId = 1L),
+                requesterId = 1L
+            )
+
+            assertNotNull(updated)
+            assertEquals("Updated Name", updated.name)
+        }
+    }
+
+    @Test
+    fun `updateBook returns null for non-owner`() {
+        runBlocking {
+            val created = bookService.createBook(bookRequest(isbn = "isbn-update-not-owner", userId = 1L))
+
+            val updated = bookService.updateBook(
+                created.id!!,
+                created.copy(name = "Hacked Name", userId = 1L),
+                requesterId = 2L
+            )
+
+            assertNull(updated)
+            assertEquals("Test Book", bookService.getBookById(created.id!!)?.name)
+        }
+    }
+
+    @Test
+    fun `updateBook returns null when book does not exist`() {
+        runBlocking {
+            val request = bookRequest(isbn = "isbn-update-missing", userId = 1L)
+            val updated = bookService.updateBook(9999L, request, requesterId = 1L)
+            assertNull(updated)
+        }
+    }
+
+    @Test
+    fun `updateBook ignores userId supplied in the request body and keeps the verified owner`() {
+        runBlocking {
+            val created = bookService.createBook(bookRequest(isbn = "isbn-update-userid-spoof", userId = 1L))
+
+            val updated = bookService.updateBook(
+                created.id!!,
+                created.copy(name = "Retitled", userId = 999L),
+                requesterId = 1L
+            )
+
+            assertNotNull(updated)
+            assertEquals(1L, updated.userId)
+            assertEquals(1L, bookService.getBookById(created.id!!)?.userId)
+        }
+    }
+
+    @Test
+    fun `updateBook pins modifiedBy to the requester regardless of body`() {
+        runBlocking {
+            val created = bookService.createBook(bookRequest(isbn = "isbn-update-modifiedby", userId = 1L))
+
+            val updated = bookService.updateBook(
+                created.id!!,
+                created.copy(name = "Retitled", modifiedBy = 999L),
+                requesterId = 1L
+            )
+
+            assertNotNull(updated)
+            assertEquals(1L, updated.modifiedBy)
+        }
+    }
+
+    @Test
+    fun `updateBook creates new author owned by the verified owner, not the body userId`() {
+        runBlocking {
+            val created = bookService.createBook(bookRequest(isbn = "isbn-update-author-owner", userId = 1L))
+
+            val updated = bookService.updateBook(
+                created.id!!,
+                created.copy(
+                    author = Author(name = "Newly Created During Update", image = "new.jpg"),
+                    userId = 999L
+                ),
+                requesterId = 1L
+            )
+
+            assertNotNull(updated)
+            assertEquals(1L, updated.author.userId)
+        }
+    }
+
+    // ── countBooks ────────────────────────────────────────────────────────────
+
+    @Test
+    fun `countBooks returns correct count for userId`() = runBlocking {
+        bookService.createBook(bookRequest(isbn = "isbn-c1", userId = 100L))
+        bookService.createBook(bookRequest(isbn = "isbn-c2", userId = 100L))
+        bookService.createBook(bookRequest(isbn = "isbn-c3", userId = 200L))
+
+        assertEquals(2, bookService.countBooks(100L))
+        assertEquals(1, bookService.countBooks(200L))
+        assertEquals(0, bookService.countBooks(300L))
     }
 }

@@ -19,12 +19,10 @@ val RoleAuthorizationPlugin = createRouteScopedPlugin(
     val requiredRole = pluginConfig.requiredRole ?: return@createRouteScopedPlugin
 
     on(AuthenticationChecked) { call ->
-        val principal = call.principal<JWTPrincipal>()
-        if (principal == null) {
-            // Principal might be missing if authentication failed or wasn't required
+        val principal =
+            call.principal<JWTPrincipal>() ?: // Principal might be missing if authentication failed or wasn't required
             // But usually withRole is used inside authenticate { ... }
             return@on
-        }
 
         val userRoleStr = principal.payload.getClaim("role").asString()
         val userRole = userRoleStr?.let {

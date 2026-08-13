@@ -2,6 +2,7 @@ package com.dw.routes.user
 
 import com.dw.model.dto.LoginDTO
 import com.dw.service.authentication.JwtService.Companion.ACCESS_TOKEN_EXPIRES
+import com.dw.service.authentication.JwtService.Companion.REFRESH_TOKEN_EXPIRES
 import com.dw.service.authentication.LoginServiceInterface
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -29,6 +30,6 @@ private fun RoutingContext.appendTokensToCookies(token: Pair<String, String>) {
         "refresh_token",
         token.second,
         secure = true,
-        expires = GMTDate(Date().time + ACCESS_TOKEN_EXPIRES)
+        expires = GMTDate(Date().time + REFRESH_TOKEN_EXPIRES)
     )
 }

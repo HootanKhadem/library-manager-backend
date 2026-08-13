@@ -11,7 +11,6 @@ import com.dw.service.authentication.LoginServiceImpl
 import com.dw.service.util.PasswordUtil
 import io.ktor.server.config.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.Assert.assertThrows
 import kotlin.test.*
@@ -41,9 +40,7 @@ class LoginServiceImplTest {
 
     @AfterTest
     fun tearDown() {
-        transaction {
-            SchemaUtils.drop(com.dw.db.mapping.UserTable)
-        }
+        transaction { exec("DROP ALL OBJECTS") }
     }
 
     @Test

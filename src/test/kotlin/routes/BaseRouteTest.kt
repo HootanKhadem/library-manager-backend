@@ -2,16 +2,12 @@ package routes
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import com.dw.db.mapping.AuthorTable
-import com.dw.db.mapping.BookTable
-import com.dw.db.mapping.UserTable
 import com.dw.model.dto.Role
 import com.dw.plugins.*
 import com.google.gson.Gson
 import io.ktor.server.application.*
 import io.ktor.server.config.*
 import io.ktor.server.testing.*
-import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.util.*
 
@@ -31,13 +27,14 @@ open class BaseRouteTest {
 
     protected fun cleanup() {
         transaction {
-            SchemaUtils.drop(BookTable, AuthorTable, UserTable)
+            exec("DROP ALL OBJECTS")
         }
     }
 
     protected fun createToken(
         email: String? = "test@example.com",
         role: Role? = Role.USER,
+        userId: Long? = 1L,
         issuer: String = "issuer",
         audience: String = "audience",
         secret: String = "secret"
@@ -55,6 +52,10 @@ open class BaseRouteTest {
             builder = builder.withClaim("role", role.name)
         }
 
+        if (userId != null) {
+            builder = builder.withClaim("userId", userId)
+        }
+
         return builder.sign(Algorithm.HMAC256(secret))
     }
 
@@ -70,6 +71,7 @@ open class BaseRouteTest {
         configureDependencyInjection()
         configureContentNegotiation()
         configureJWT()
+        configureSwagger()
         configurePublicRouting()
         configureAuthenticatedRouting()
         configureAdminRouting()

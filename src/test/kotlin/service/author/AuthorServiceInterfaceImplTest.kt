@@ -1,15 +1,11 @@
 package service.author
 
-import com.dw.db.mapping.AuthorTable
-import com.dw.db.mapping.BookTable
-import com.dw.db.mapping.UserTable
 import com.dw.db.postgres.user.PSQLAuthorRepository
 import com.dw.model.dto.Author
 import com.dw.plugins.configureDatabases
 import com.dw.service.author.AuthorServiceInterfaceImpl
 import io.ktor.server.config.MapApplicationConfig
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlin.test.*
 
@@ -32,9 +28,7 @@ class AuthorServiceInterfaceImplTest {
 
     @AfterTest
     fun tearDown() {
-        transaction {
-            SchemaUtils.drop(BookTable, AuthorTable, UserTable)
-        }
+        transaction { exec("DROP ALL OBJECTS") }
     }
 
     // ── createAuthor ──────────────────────────────────────────────────────────
@@ -130,5 +124,31 @@ class AuthorServiceInterfaceImplTest {
         val result = authorService.findOrCreateAuthor(Author(id = saved.id, name = "Id Author", image = "id.jpg"))
 
         assertEquals(saved.id, result.id)
+    }
+
+    // ── getAllAuthorsPaged ────────────────────────────────────────────────────
+
+    @Test
+    fun `getAllAuthorsPaged returns paged wrapper with correct metadata`() = runBlocking {
+        authorService.createAuthor(Author(name = "Page Author 1", image = "1.jpg", userId = 55L))
+        authorService.createAuthor(Author(name = "Page Author 2", image = "2.jpg", userId = 55L))
+        authorService.createAuthor(Author(name = "Page Author 3", image = "3.jpg", userId = 55L))
+
+        val result = authorService.getAllAuthorsPaged(55L, page = 1, pageSize = 2)
+
+        assertEquals(2, result.items.size)
+        assertEquals(1, result.page)
+        assertEquals(2, result.pageSize)
+        assertEquals(3, result.totalItems)
+        assertEquals(2, result.totalPages)
+    }
+
+    @Test
+    fun `getAllAuthorsPaged returns empty items with totalPages of 1 when user has no authors`() = runBlocking {
+        val result = authorService.getAllAuthorsPaged(999L, page = 1, pageSize = 20)
+
+        assertEquals(0, result.items.size)
+        assertEquals(0, result.totalItems)
+        assertEquals(1, result.totalPages)
     }
 }

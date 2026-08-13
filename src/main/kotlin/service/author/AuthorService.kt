@@ -2,6 +2,7 @@ package com.dw.service.author
 
 import com.dw.db.AuthorRepository
 import com.dw.model.dto.Author
+import com.dw.model.dto.PagedResponse
 import java.time.LocalDateTime
 
 
@@ -9,6 +10,7 @@ interface AuthorServiceInterface {
     suspend fun createAuthor(author: Author): Author
     suspend fun searchAuthors(query: String): List<Author>
     suspend fun findOrCreateAuthor(author: Author, userId: Long? = null): Author
+    suspend fun getAllAuthorsPaged(userId: Long, page: Int, pageSize: Int): PagedResponse<Author>
 }
 
 class AuthorServiceInterfaceImpl(
@@ -37,5 +39,11 @@ class AuthorServiceInterfaceImpl(
                 modifiedBy = userId
             )
         )
+    }
+
+    override suspend fun getAllAuthorsPaged(userId: Long, page: Int, pageSize: Int): PagedResponse<Author> {
+        val items = authorRepository.findAllByUserIdPaged(userId, page, pageSize)
+        val total = authorRepository.countByUserId(userId)
+        return PagedResponse.of(items, page, pageSize, total)
     }
 }
