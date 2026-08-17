@@ -20,7 +20,8 @@ open class BaseRouteTest {
         "ktor.jwt.secret" to "secret",
         "ktor.jwt.issuer" to "issuer",
         "ktor.jwt.audience" to "audience",
-        "ktor.jwt.realm" to "realm"
+        "ktor.jwt.realm" to "realm",
+        "ktor.cors.allowedOrigin" to "http://localhost:3000"
     )
 
     protected val gson = Gson()
@@ -64,14 +65,18 @@ open class BaseRouteTest {
         return builder.sign(Algorithm.HMAC256(secret))
     }
 
-    protected fun ApplicationTestBuilder.setupLibraryApp() {
+    protected fun ApplicationTestBuilder.setupLibraryApp(includeCors: Boolean = false) {
         environment { config = testConfig }
         application {
-            configureLibraryModule()
+            configureLibraryModule(includeCors)
         }
     }
 
-    private suspend fun Application.configureLibraryModule() {
+    private suspend fun Application.configureLibraryModule(includeCors: Boolean) {
+        if (includeCors) {
+            configureHTTP()
+        }
+        configureStatusPages()
         configureDatabases(testConfig)
         configureDependencyInjection()
         configureContentNegotiation()
