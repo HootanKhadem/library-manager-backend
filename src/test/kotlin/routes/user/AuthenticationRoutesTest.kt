@@ -78,6 +78,22 @@ class AuthenticationRoutesTest : BaseRouteTest() {
     }
 
     @Test
+    fun `POST auth login with wrong password returns 401`() = testApplication {
+        setupLibraryApp()
+        startApplication()
+        createUser("test@example.com", "correct-password")
+
+        val response = client.post("/auth/login") {
+            contentType(ContentType.Application.Json)
+            setBody(gson.toJson(mapOf("email" to "test@example.com", "password" to "wrong-password")))
+        }
+
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+
+        cleanup()
+    }
+
+    @Test
     fun `logout clears both auth cookies and works with no existing session`() = testApplication {
         setupLibraryApp()
 

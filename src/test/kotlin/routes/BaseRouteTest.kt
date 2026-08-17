@@ -72,6 +72,7 @@ open class BaseRouteTest {
     }
 
     private suspend fun Application.configureLibraryModule() {
+        configureStatusPages()
         configureDatabases(testConfig)
         configureDependencyInjection()
         configureContentNegotiation()
