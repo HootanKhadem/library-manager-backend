@@ -10,6 +10,8 @@ ktor:
     audience: ${JWT_AUDIENCE:**}
     realm: ${JWT_REALM:access to the librax api}
     signatureAlgorithm: "HS256"
+  cors:
+    allowedOrigin: ${CORS_ALLOWED_ORIGIN:http://localhost:3000}
   admin:
     username: ${ADMIN_USERNAME:admin}
     password: ${ADMIN_PASSWORD:admin}

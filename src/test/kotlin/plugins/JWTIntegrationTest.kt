@@ -16,6 +16,8 @@ import io.ktor.server.testing.*
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.test.assertNotEquals
 
 class JWTIntegrationTest {
 
@@ -62,11 +64,129 @@ class JWTIntegrationTest {
     }
 
     @Test
+    fun `protected route should succeed with a valid access_token cookie and set no new cookie`() = testJWTApplication {
+        val jwtService = JwtService(JwtConfig(secret, issuer, audience, realm))
+        val tokenPair = jwtService.generateToken(UserDTO(1, "Test User", "test@example.com", "password", Role.USER))
+
+        val response = client.get("/protected") {
+            cookie("access_token", tokenPair.first)
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals("Success", response.bodyAsText())
+        assertTrue(response.headers.getAll(HttpHeaders.SetCookie).isNullOrEmpty())
+    }
+
+    @Test
+    fun `protected route should transparently refresh an expired access_token using a valid refresh_token cookie`() = testJWTApplication {
+        val jwtService = JwtService(JwtConfig(secret, issuer, audience, realm))
+        val tokenPair = jwtService.generateToken(UserDTO(1, "Test User", "test@example.com", "password", Role.USER))
+        val expiredAccessToken = JWT.create()
+            .withAudience(audience)
+            .withIssuer(issuer)
+            .withClaim("email", "test@example.com")
+            .withClaim("role", "USER")
+            .withClaim("userId", 1L)
+            .withClaim("type", "access")
+            .withExpiresAt(Date(System.currentTimeMillis() - 1000))
+            .sign(Algorithm.HMAC256(secret))
+
+        val response = client.get("/protected") {
+            cookie("access_token", expiredAccessToken)
+            cookie("refresh_token", tokenPair.second)
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals("Success", response.bodyAsText())
+
+        val setCookies = response.headers.getAll(HttpHeaders.SetCookie).orEmpty().map { parseServerSetCookieHeader(it) }
+        val newAccessCookie = setCookies.first { it.name == "access_token" }
+        assertTrue(newAccessCookie.value.isNotEmpty())
+        assertNotEquals(expiredAccessToken, newAccessCookie.value)
+        assertTrue(newAccessCookie.httpOnly)
+        assertEquals("None", newAccessCookie.extensions["SameSite"])
+    }
+
+    @Test
+    fun `protected route should return 401 when both access_token and refresh_token are expired`() = testJWTApplication {
+        fun expiredToken(type: String) = JWT.create()
+            .withAudience(audience)
+            .withIssuer(issuer)
+            .withClaim("email", "test@example.com")
+            .withClaim("role", "USER")
+            .withClaim("userId", 1L)
+            .withClaim("type", type)
+            .withExpiresAt(Date(System.currentTimeMillis() - 1000))
+            .sign(Algorithm.HMAC256(secret))
+
+        val response = client.get("/protected") {
+            cookie("access_token", expiredToken("access"))
+            cookie("refresh_token", expiredToken("refresh"))
+        }
+
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `protected route should return 401 when the refresh_token cookie actually holds an access token`() = testJWTApplication {
+        val jwtService = JwtService(JwtConfig(secret, issuer, audience, realm))
+        val tokenPair = jwtService.generateToken(UserDTO(1, "Test User", "test@example.com", "password", Role.USER))
+        val expiredAccessToken = JWT.create()
+            .withAudience(audience)
+            .withIssuer(issuer)
+            .withClaim("email", "test@example.com")
+            .withClaim("type", "access")
+            .withExpiresAt(Date(System.currentTimeMillis() - 1000))
+            .sign(Algorithm.HMAC256(secret))
+
+        val response = client.get("/protected") {
+            cookie("access_token", expiredAccessToken)
+            cookie("refresh_token", tokenPair.first)
+        }
+
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `protected route should return 401 for a refresh-type token presented as a bearer token`() = testJWTApplication {
+        val token = JWT.create()
+            .withAudience(audience)
+            .withIssuer(issuer)
+            .withClaim("email", "testuser@example.com")
+            .withClaim("type", "refresh")
+            .withExpiresAt(Date(System.currentTimeMillis() + 3600000))
+            .sign(Algorithm.HMAC256(secret))
+
+        val response = client.get("/protected") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `protected route should return 401 for a bearer token with no type claim`() = testJWTApplication {
+        val token = JWT.create()
+            .withAudience(audience)
+            .withIssuer(issuer)
+            .withClaim("email", "testuser@example.com")
+            .withExpiresAt(Date(System.currentTimeMillis() + 3600000))
+            .sign(Algorithm.HMAC256(secret))
+
+        val response = client.get("/protected") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
     fun `protected route should be accessible with token containing email claim`() = testJWTApplication {
         val token = JWT.create()
             .withAudience(audience)
             .withIssuer(issuer)
             .withClaim("email", "testuser@example.com")
+            .withClaim("type", "access")
             .withExpiresAt(Date(System.currentTimeMillis() + 3600000))
             .sign(Algorithm.HMAC256(secret))
 
