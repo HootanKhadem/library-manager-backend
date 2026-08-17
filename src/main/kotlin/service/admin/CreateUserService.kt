@@ -1,6 +1,7 @@
 package com.dw.service.admin
 
 import com.dw.db.GenreRepository
+import com.dw.db.UserPreferenceRepository
 import com.dw.db.UserRepository
 import com.dw.model.dto.UserDTO
 import com.dw.service.util.PasswordUtil
@@ -12,7 +13,8 @@ interface CreateUserServiceInterface {
 
 class CreateUserService(
     private val userRepository: UserRepository,
-    private val genreRepository: GenreRepository
+    private val genreRepository: GenreRepository,
+    private val userPreferenceRepository: UserPreferenceRepository
 ) : CreateUserServiceInterface {
 
     override suspend fun createNewUser(userDTO: UserDTO, createdBy: Long?): UserDTO {
@@ -29,6 +31,7 @@ class CreateUserService(
         )
         val savedUser = userRepository.save(userToSave)
         genreRepository.seedDefaults(savedUser.id!!)
+        userPreferenceRepository.seedDefaults(savedUser.id!!)
         return savedUser
     }
 }
