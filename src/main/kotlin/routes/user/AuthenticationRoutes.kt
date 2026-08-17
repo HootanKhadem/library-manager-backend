@@ -1,6 +1,11 @@
 package com.dw.routes.user
 
+import com.auth0.jwt.JWT
 import com.dw.model.dto.LoginDTO
+import com.dw.plugins.ACCESS_TOKEN_COOKIE
+import com.dw.plugins.REFRESH_TOKEN_COOKIE
+import com.dw.plugins.appendAuthCookie
+import com.dw.plugins.clearAuthCookie
 import com.dw.service.authentication.JwtService.Companion.ACCESS_TOKEN_EXPIRES
 import com.dw.service.authentication.JwtService.Companion.REFRESH_TOKEN_EXPIRES
 import com.dw.service.authentication.LoginServiceInterface
@@ -15,21 +20,34 @@ fun Route.login(loginService: LoginServiceInterface) {
         val loginDTO = call.receive<LoginDTO>()
         val token = loginService.login(loginDTO.email, loginDTO.password)
         appendTokensToCookies(token)
-        call.respond(mapOf("access_token" to token.first, "refresh_token" to token.second))
+
+        val accessClaims = JWT.decode(token.first)
+        call.respond(
+            mapOf(
+                "email" to accessClaims.getClaim("email").asString(),
+                "role" to accessClaims.getClaim("role").asString()
+            )
+        )
+    }
+}
+
+fun Route.logout() {
+    post("/auth/logout") {
+        call.response.cookies.clearAuthCookie(ACCESS_TOKEN_COOKIE)
+        call.response.cookies.clearAuthCookie(REFRESH_TOKEN_COOKIE)
+        call.respond(mapOf("message" to "logged out"))
     }
 }
 
 private fun RoutingContext.appendTokensToCookies(token: Pair<String, String>) {
-    call.response.cookies.append(
-        "access_token",
+    call.response.cookies.appendAuthCookie(
+        ACCESS_TOKEN_COOKIE,
         token.first,
-        secure = true,
-        expires = GMTDate(Date().time + ACCESS_TOKEN_EXPIRES)
+        GMTDate(Date().time + ACCESS_TOKEN_EXPIRES)
     )
-    call.response.cookies.append(
-        "refresh_token",
+    call.response.cookies.appendAuthCookie(
+        REFRESH_TOKEN_COOKIE,
         token.second,
-        secure = true,
-        expires = GMTDate(Date().time + REFRESH_TOKEN_EXPIRES)
+        GMTDate(Date().time + REFRESH_TOKEN_EXPIRES)
     )
 }

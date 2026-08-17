@@ -11,6 +11,7 @@ import org.junit.Test
 import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class JwtServiceTest {
@@ -63,5 +64,92 @@ class JwtServiceTest {
         assertEquals(user.role.name, refreshDecodedJWT.getClaim("role").asString())
         assertTrue(refreshDecodedJWT.expiresAt.after(Date(now)))
         assertTrue(refreshDecodedJWT.expiresAt.before(Date(now + REFRESH_TOKEN_EXPIRES + 5000)))
+    }
+
+    @Test
+    fun `generateToken should tag access and refresh tokens with a type claim`() {
+        val user = UserDTO(id = 1, name = "Test User", email = "test@example.com", password = "password", role = Role.USER)
+        val tokenPair = jwtService.generateToken(user)
+
+        val decodedAccess = JWT.decode(tokenPair.first)
+        val decodedRefresh = JWT.decode(tokenPair.second)
+
+        assertEquals("access", decodedAccess.getClaim("type").asString())
+        assertEquals("refresh", decodedRefresh.getClaim("type").asString())
+    }
+
+    @Test
+    fun `verify should return the decoded token for a valid token`() {
+        val user = UserDTO(id = 1, name = "Test User", email = "test@example.com", password = "password", role = Role.USER)
+        val tokenPair = jwtService.generateToken(user)
+
+        val decoded = jwtService.verify(tokenPair.first)
+
+        assertNotNull(decoded)
+        assertEquals("test@example.com", decoded.getClaim("email").asString())
+    }
+
+    @Test
+    fun `verify should return null for an expired token`() {
+        val expiredToken = JWT.create()
+            .withAudience(config.audience)
+            .withIssuer(config.issuer)
+            .withClaim("email", "test@example.com")
+            .withClaim("type", "access")
+            .withExpiresAt(Date(System.currentTimeMillis() - 1000))
+            .sign(Algorithm.HMAC256(config.secret))
+
+        assertNull(jwtService.verify(expiredToken))
+    }
+
+    @Test
+    fun `verify should return null for a token signed with a different secret`() {
+        val tamperedToken = JWT.create()
+            .withAudience(config.audience)
+            .withIssuer(config.issuer)
+            .withClaim("email", "test@example.com")
+            .withClaim("type", "access")
+            .withExpiresAt(Date(System.currentTimeMillis() + 3600000))
+            .sign(Algorithm.HMAC256("wrong-secret"))
+
+        assertNull(jwtService.verify(tamperedToken))
+    }
+
+    @Test
+    fun `refreshAccessToken should mint a new access token from a valid refresh token`() {
+        val user = UserDTO(id = 42, name = "Test User", email = "test@example.com", password = "password", role = Role.ADMIN)
+        val tokenPair = jwtService.generateToken(user)
+
+        val newAccessToken = jwtService.refreshAccessToken(tokenPair.second)
+
+        assertNotNull(newAccessToken)
+        val decoded = JWT.decode(newAccessToken)
+        assertEquals("access", decoded.getClaim("type").asString())
+        assertEquals("test@example.com", decoded.getClaim("email").asString())
+        assertEquals("ADMIN", decoded.getClaim("role").asString())
+        assertEquals(42L, decoded.getClaim("userId").asLong())
+    }
+
+    @Test
+    fun `refreshAccessToken should return null when given an access token instead of a refresh token`() {
+        val user = UserDTO(id = 1, name = "Test User", email = "test@example.com", password = "password", role = Role.USER)
+        val tokenPair = jwtService.generateToken(user)
+
+        assertNull(jwtService.refreshAccessToken(tokenPair.first))
+    }
+
+    @Test
+    fun `refreshAccessToken should return null for an expired refresh token`() {
+        val expiredRefreshToken = JWT.create()
+            .withAudience(config.audience)
+            .withIssuer(config.issuer)
+            .withClaim("email", "test@example.com")
+            .withClaim("role", "USER")
+            .withClaim("userId", 1L)
+            .withClaim("type", "refresh")
+            .withExpiresAt(Date(System.currentTimeMillis() - 1000))
+            .sign(Algorithm.HMAC256(config.secret))
+
+        assertNull(jwtService.refreshAccessToken(expiredRefreshToken))
     }
 }
