@@ -14,6 +14,7 @@ import com.dw.routes.member.memberRoutes
 import com.dw.routes.metrics.metrics
 import com.dw.routes.preference.preferenceRoutes
 import com.dw.routes.user.login
+import com.dw.routes.user.logout
 import com.dw.service.admin.CreateUserServiceInterface
 import com.dw.service.authentication.LoginServiceInterface
 import com.dw.service.author.AuthorServiceInterface
@@ -35,6 +36,7 @@ suspend fun Application.configurePublicRouting() {
         helloWorld()
         metrics()
         login(loginService)
+        logout()
     }
 }
 
