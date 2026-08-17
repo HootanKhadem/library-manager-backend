@@ -37,7 +37,8 @@ open class BaseRouteTest {
         userId: Long? = 1L,
         issuer: String = "issuer",
         audience: String = "audience",
-        secret: String = "secret"
+        secret: String = "secret",
+        type: String? = "access"
     ): String {
         var builder = JWT.create()
             .withIssuer(issuer)
@@ -54,6 +55,10 @@ open class BaseRouteTest {
 
         if (userId != null) {
             builder = builder.withClaim("userId", userId)
+        }
+
+        if (type != null) {
+            builder = builder.withClaim("type", type)
         }
 
         return builder.sign(Algorithm.HMAC256(secret))
