@@ -17,6 +17,11 @@ fun Application.configureHTTP() {
     }
 
     val allowedOrigin = Url(environment.config.property("ktor.cors.allowedOrigin").getString())
+    log.info(
+        "CORS configured for origin scheme='{}' host='{}'",
+        allowedOrigin.protocol.name,
+        allowedOrigin.hostWithPortIfSpecified
+    )
     install(CORS) {
         allowCredentials = true
         allowHost(allowedOrigin.hostWithPortIfSpecified, schemes = listOf(allowedOrigin.protocol.name))
