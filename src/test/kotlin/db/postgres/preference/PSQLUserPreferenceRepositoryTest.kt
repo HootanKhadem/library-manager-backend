@@ -77,4 +77,19 @@ class PSQLUserPreferenceRepositoryTest {
         assertEquals("User 1 Library", repository.findByUserId(1L)?.libraryName)
         assertEquals("User 2 Library", repository.findByUserId(2L)?.libraryName)
     }
+
+    @Test
+    fun `seedDefaults creates a row with schema default values`() = runBlocking {
+        createUser(1L)
+        repository.seedDefaults(1L)
+
+        val prefs = repository.findByUserId(1L)
+        assertNotNull(prefs)
+        assertNull(prefs.libraryName)
+        assertNull(prefs.ownerName)
+        assertNull(prefs.description)
+        assertEquals(30, prefs.defaultLoanDurationDays)
+        assertEquals("DD MMM YYYY", prefs.dateFormat)
+        assertEquals("en", prefs.language)
+    }
 }

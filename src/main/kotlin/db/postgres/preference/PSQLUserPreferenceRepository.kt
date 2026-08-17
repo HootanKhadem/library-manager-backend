@@ -29,4 +29,17 @@ class PSQLUserPreferenceRepository : UserPreferenceRepository {
         dao.updateFromDto(preference.copy(modifiedOn = now), actingUserId = userId)
         dao.toDto()
     }
+
+    override suspend fun seedDefaults(userId: Long) {
+        withTransaction {
+            val now = LocalDateTime.now().toString()
+            UserPreferenceDAO.new {
+                this.userId = userId
+                this.createdOn = now
+                this.createdBy = userId
+                this.modifiedOn = now
+                this.modifiedBy = userId
+            }
+        }
+    }
 }
