@@ -11,6 +11,7 @@ fun main(args: Array<String>) {
 
 suspend fun Application.module() {
     configureHTTP()
+    configureStatusPages()
     configureDatabases()
 
     configureDependencyInjection()
