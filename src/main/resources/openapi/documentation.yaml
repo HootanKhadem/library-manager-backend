@@ -63,8 +63,8 @@ paths:
   /auth/login:
     post:
       tags: [auth]
-      summary: Log in and receive access/refresh tokens
-      description: Tokens are also set as `access_token` and `refresh_token` cookies.
+      summary: Log in and receive an authenticated session
+      description: Access and refresh tokens are set as `access_token` and `refresh_token` httpOnly cookies; they are not returned in the response body.
       requestBody:
         required: true
         content:
@@ -79,10 +79,27 @@ paths:
               schema:
                 type: object
                 properties:
-                  access_token:
+                  email:
                     type: string
-                  refresh_token:
+                  role:
                     type: string
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Log out and clear the session cookies
+      description: Public endpoint; always succeeds. Clears the `access_token` and `refresh_token` cookies.
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: logged out
 
   /admin/users:
     post:
@@ -740,6 +757,11 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: "JWT sent as `Authorization: Bearer <token>` or via the `access_token` cookie."
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: "JWT sent via the `access_token` cookie (set on login). This is the primary auth mechanism; `bearerAuth` remains available as an Authorization-header fallback."
 
   parameters:
     IdPathParam:

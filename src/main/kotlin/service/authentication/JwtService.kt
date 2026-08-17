@@ -13,7 +13,7 @@ class JwtService(private val config: JwtConfig) {
 
     companion object {
         const val ACCESS_TOKEN_EXPIRES = 3600000
-        const val REFRESH_TOKEN_EXPIRES = 3600000 * 7
+        const val REFRESH_TOKEN_EXPIRES = 3600000 * 24 * 7
         const val TYPE_ACCESS = "access"
         const val TYPE_REFRESH = "refresh"
     }
