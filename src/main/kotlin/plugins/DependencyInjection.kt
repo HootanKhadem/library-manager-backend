@@ -60,7 +60,7 @@ fun Application.configureDependencyInjection() {
         provide<UserActivityLogRepository> { PSQLUserActivityLogRepository() }
         provide<UserPreferenceRepository> { PSQLUserPreferenceRepository() }
         provide<LoginServiceInterface> { LoginServiceImpl(userRepository = resolve(), jwtService = jwtService) }
-        provide<CreateUserServiceInterface> { CreateUserService(userRepository = resolve(), genreRepository = resolve()) }
+        provide<CreateUserServiceInterface> { CreateUserService(userRepository = resolve(), genreRepository = resolve(), userPreferenceRepository = resolve()) }
         provide<AuthorServiceInterface> { AuthorServiceInterfaceImpl(authorRepository = resolve()) }
         provide<BookServiceInterface> { BookServiceImpl(bookRepository = resolve(), authorService = resolve(), lendingRepository = resolve()) }
         provide<GenreServiceInterface> { GenreServiceImpl(genreRepository = resolve()) }
