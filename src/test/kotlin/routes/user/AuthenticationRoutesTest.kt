@@ -133,4 +133,121 @@ class AuthenticationRoutesTest : BaseRouteTest() {
         assertTrue(cookies.any { it.name == "access_token" && it.value == "" })
         assertTrue(cookies.any { it.name == "refresh_token" && it.value == "" })
     }
+
+    @Test
+    fun `signup creates account, sets auth cookies, and returns 201 with name email role`() = testApplication {
+        setupLibraryApp()
+        startApplication()
+
+        val response = client.post("/auth/signup") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                gson.toJson(
+                    mapOf(
+                        "name" to "newuser",
+                        "email" to "newuser@example.com",
+                        "password" to "Password1"
+                    )
+                )
+            )
+        }
+
+        assertEquals(HttpStatusCode.Created, response.status)
+
+        val body = gson.fromJson(response.bodyAsText(), Map::class.java)
+        assertEquals("newuser", body["name"])
+        assertEquals("newuser@example.com", body["email"])
+        assertEquals("USER", body["role"])
+
+        val cookies = setCookiesOf(response)
+        assertTrue(cookies.any { it.name == "access_token" && it.value.isNotBlank() })
+        assertTrue(cookies.any { it.name == "refresh_token" && it.value.isNotBlank() })
+
+        cleanup()
+    }
+
+    @Test
+    fun `signup with an already-registered email returns 409`() = testApplication {
+        setupLibraryApp()
+        startApplication()
+        createUser("existing@example.com", "Password1")
+
+        val response = client.post("/auth/signup") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                gson.toJson(
+                    mapOf(
+                        "name" to "someone",
+                        "email" to "existing@example.com",
+                        "password" to "Password1"
+                    )
+                )
+            )
+        }
+
+        assertEquals(HttpStatusCode.Conflict, response.status)
+
+        cleanup()
+    }
+
+    @Test
+    fun `signup with a weak password returns 400`() = testApplication {
+        setupLibraryApp()
+        startApplication()
+
+        val response = client.post("/auth/signup") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                gson.toJson(
+                    mapOf(
+                        "name" to "someone",
+                        "email" to "weak@example.com",
+                        "password" to "weak"
+                    )
+                )
+            )
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+
+        cleanup()
+    }
+
+    @Test
+    fun `signup with preferences persists them for the new account`() = testApplication {
+        setupLibraryApp()
+        startApplication()
+
+        val signupResponse = client.post("/auth/signup") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                gson.toJson(
+                    mapOf(
+                        "name" to "prefuser",
+                        "email" to "prefuser@example.com",
+                        "password" to "Password1",
+                        "preferences" to mapOf(
+                            "libraryName" to "My Library",
+                            "language" to "fa",
+                            "dateFormat" to "YYYY-MM-DD",
+                            "defaultLoanDurationDays" to 14
+                        )
+                    )
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.Created, signupResponse.status)
+
+        val accessCookie = setCookiesOf(signupResponse).first { it.name == "access_token" }
+        val prefsResponse = client.get("/api/preferences") {
+            cookie("access_token", accessCookie.value)
+        }
+
+        assertEquals(HttpStatusCode.OK, prefsResponse.status)
+        val prefsBody = gson.fromJson(prefsResponse.bodyAsText(), Map::class.java)
+        assertEquals("My Library", prefsBody["libraryName"])
+        assertEquals("fa", prefsBody["language"])
+
+        cleanup()
+    }
 }
