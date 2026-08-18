@@ -8,7 +8,6 @@ servers:
 tags:
   - name: public
   - name: auth
-  - name: admin
   - name: book
   - name: author
   - name: genre
@@ -101,26 +100,35 @@ paths:
                     type: string
                     example: logged out
 
-  /admin/users:
+  /auth/signup:
     post:
-      tags: [admin]
-      summary: Create a user
-      description: Requires ADMIN role.
-      security:
-        - bearerAuth: []
+      tags: [auth]
+      summary: Create a new account and log in
+      description: Public endpoint. Role is always USER; access and refresh tokens are set as httpOnly cookies exactly like /auth/login.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserDTO'
+              $ref: '#/components/schemas/SignupRequest'
       responses:
         '201':
-          description: User created
+          description: Account created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserDTO'
+                type: object
+                properties:
+                  name:
+                    type: string
+                  email:
+                    type: string
+                  role:
+                    type: string
+        '400':
+          description: Weak password or invalid preferences
+        '409':
+          description: Email already registered
 
   /api/book:
     post:
@@ -830,6 +838,20 @@ components:
         modifiedBy:
           type: integer
           format: int64
+
+    SignupRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+          description: Minimum 8 characters, at least one uppercase letter, at least one digit.
+        preferences:
+          $ref: '#/components/schemas/UserPreference'
 
     Author:
       type: object
