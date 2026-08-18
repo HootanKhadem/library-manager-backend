@@ -7,5 +7,6 @@ interface UserRepository {
     suspend fun findByEmail(email: String): UserDTO?
     suspend fun save(userDTO: UserDTO): UserDTO
     suspend fun update(userDTO: UserDTO): UserDTO
+    suspend fun delete(id: Long): Boolean
     suspend fun createAdminUser()
 }

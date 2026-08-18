@@ -39,6 +39,12 @@ class PSQLUserRepository(private val config: ApplicationConfig? = null) : UserRe
         user.toUserDto()
     }
 
+    override suspend fun delete(id: Long): Boolean = withTransaction {
+        val user = UserDAO.findById(id) ?: return@withTransaction false
+        user.delete()
+        true
+    }
+
     override suspend fun createAdminUser() {
         val adminUsername = config?.propertyOrNull("ktor.admin.username")?.getString() ?: "admin"
         val adminPassword = config?.propertyOrNull("ktor.admin.password")?.getString() ?: "admin"

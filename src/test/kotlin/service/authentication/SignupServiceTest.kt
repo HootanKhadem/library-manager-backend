@@ -1,10 +1,14 @@
 package service.authentication
 
 import com.dw.EmailAlreadyExistsException
+import com.dw.db.GenreRepository
+import com.dw.db.UserRepository
 import com.dw.db.postgres.genre.PSQLGenreRepository
 import com.dw.db.postgres.preference.PSQLUserPreferenceRepository
 import com.dw.db.postgres.user.PSQLUserRepository
+import com.dw.model.dto.Role
 import com.dw.model.dto.SignupRequest
+import com.dw.model.dto.UserDTO
 import com.dw.model.dto.UserPreference
 import com.dw.plugins.JwtConfig
 import com.dw.plugins.configureDatabases
@@ -146,5 +150,81 @@ class SignupServiceTest {
         }
 
         assertNull(userRepository.findByEmail("badpref@example.com"))
+    }
+
+    @Test
+    fun `signup converts a save-time unique constraint violation into EmailAlreadyExistsException`(): Unit = runBlocking {
+        // Simulates the TOCTOU race described in the finding: two concurrent signups can both
+        // pass the findByEmail check (each check and each save runs in its own independently-
+        // committed transaction), so the second save() is the one that actually hits the DB's
+        // UNIQUE constraint on email. We reproduce that end state directly - no real concurrency
+        // needed - by stubbing findByEmail to always report "no such user" while save() still
+        // writes to the real table, so the second signup's save() collides for real.
+        val raceyUserRepository = object : UserRepository by userRepository {
+            override suspend fun findByEmail(email: String): UserDTO? = null
+        }
+        val raceyService = SignupService(
+            userRepository = raceyUserRepository,
+            genreRepository = genreRepository,
+            userPreferenceRepository = userPreferenceRepository,
+            userPreferenceService = userPreferenceService,
+            jwtService = jwtService
+        )
+
+        raceyService.signup(SignupRequest(name = "racer1", email = "race@example.com", password = "Password1"))
+
+        assertFailsWith<EmailAlreadyExistsException> {
+            raceyService.signup(SignupRequest(name = "racer2", email = "race@example.com", password = "Password1"))
+        }
+    }
+
+    @Test
+    fun `userRepository delete removes the user row`(): Unit = runBlocking {
+        val user = userRepository.save(
+            UserDTO(
+                name = "deleteme",
+                email = "deleteme@example.com",
+                password = "hashed",
+                role = Role.USER,
+                salt = "salt",
+                createdOn = null,
+                createdBy = null,
+                modifiedOn = null,
+                modifiedBy = null
+            )
+        )
+
+        val deleted = userRepository.delete(user.id!!)
+
+        assertTrue(deleted)
+        assertNull(userRepository.findByEmail("deleteme@example.com"))
+    }
+
+    @Test
+    fun `signup deletes the just-created user if genre seeding fails afterward`(): Unit = runBlocking {
+        // Forces the seeding-failure path directly (GenreRepository is an interface, so we can
+        // stub it to throw) rather than trying to trigger a real infrastructure failure. This
+        // exercises the exact try/catch + compensating-delete logic added to SignupService: the
+        // user row must not survive a failed signup, and the original exception must propagate.
+        val failingGenreRepository = object : GenreRepository by genreRepository {
+            override suspend fun seedDefaults(userId: Long) {
+                throw RuntimeException("genre seeding boom")
+            }
+        }
+        val serviceWithFailingGenreSeed = SignupService(
+            userRepository = userRepository,
+            genreRepository = failingGenreRepository,
+            userPreferenceRepository = userPreferenceRepository,
+            userPreferenceService = userPreferenceService,
+            jwtService = jwtService
+        )
+
+        assertFailsWith<RuntimeException> {
+            serviceWithFailingGenreSeed.signup(
+                SignupRequest(name = "ghost", email = "ghost@example.com", password = "Password1")
+            )
+        }
+
+        assertNull(userRepository.findByEmail("ghost@example.com"))
     }
 }
