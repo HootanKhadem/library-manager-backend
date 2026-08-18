@@ -24,3 +24,11 @@ data class UserDTO(
 
 @Serializable
 data class LoginDTO(val email: String, val password: String)
+
+@Serializable
+data class SignupRequest(
+    val name: String,
+    val email: String,
+    val password: String,
+    val preferences: UserPreference? = null
+)
