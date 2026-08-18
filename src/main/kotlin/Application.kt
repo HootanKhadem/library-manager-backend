@@ -21,6 +21,5 @@ suspend fun Application.module() {
     configureSwagger()
     configurePublicRouting()
     configureAuthenticatedRouting()
-    configureAdminRouting()
     configureContentNegotiation()
 }

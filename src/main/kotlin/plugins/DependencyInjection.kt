@@ -18,8 +18,6 @@ import com.dw.db.postgres.member.PSQLMemberRepository
 import com.dw.db.postgres.preference.PSQLUserPreferenceRepository
 import com.dw.db.postgres.user.PSQLAuthorRepository
 import com.dw.db.postgres.user.PSQLUserRepository
-import com.dw.service.admin.CreateUserService
-import com.dw.service.admin.CreateUserServiceInterface
 import com.dw.service.authentication.JwtService
 import com.dw.service.authentication.LoginServiceImpl
 import com.dw.service.authentication.LoginServiceInterface
@@ -62,7 +60,6 @@ fun Application.configureDependencyInjection() {
         provide<UserActivityLogRepository> { PSQLUserActivityLogRepository() }
         provide<UserPreferenceRepository> { PSQLUserPreferenceRepository() }
         provide<LoginServiceInterface> { LoginServiceImpl(userRepository = resolve(), jwtService = jwtService) }
-        provide<CreateUserServiceInterface> { CreateUserService(userRepository = resolve(), genreRepository = resolve(), userPreferenceRepository = resolve()) }
         provide<AuthorServiceInterface> { AuthorServiceInterfaceImpl(authorRepository = resolve()) }
         provide<BookServiceInterface> { BookServiceImpl(bookRepository = resolve(), authorService = resolve(), lendingRepository = resolve()) }
         provide<GenreServiceInterface> { GenreServiceImpl(genreRepository = resolve()) }

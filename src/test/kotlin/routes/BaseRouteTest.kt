@@ -84,6 +84,5 @@ open class BaseRouteTest {
         configureSwagger()
         configurePublicRouting()
         configureAuthenticatedRouting()
-        configureAdminRouting()
     }
 }
