@@ -131,4 +131,20 @@ class SignupServiceTest {
             )
         }
     }
+
+    @Test
+    fun `signup with invalid preferences does not create a user`(): Unit = runBlocking {
+        assertFailsWith<IllegalArgumentException> {
+            service.signup(
+                SignupRequest(
+                    name = "u",
+                    email = "badpref@example.com",
+                    password = "Password1",
+                    preferences = UserPreference(language = "xx")
+                )
+            )
+        }
+
+        assertNull(userRepository.findByEmail("badpref@example.com"))
+    }
 }

@@ -32,6 +32,8 @@ class SignupService(
         require(request.password.any { it.isUpperCase() }) { "password must contain at least one uppercase letter" }
         require(request.password.any { it.isDigit() }) { "password must contain at least one digit" }
 
+        request.preferences?.let { userPreferenceService.validatePreferences(it) }
+
         val salt = PasswordUtil.generateSalt()
         val hashedPassword = PasswordUtil.hashWithSalt(request.password, salt)
         val now = LocalDateTime.now().toString()
