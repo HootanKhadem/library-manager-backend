@@ -18,11 +18,11 @@ import com.dw.db.postgres.member.PSQLMemberRepository
 import com.dw.db.postgres.preference.PSQLUserPreferenceRepository
 import com.dw.db.postgres.user.PSQLAuthorRepository
 import com.dw.db.postgres.user.PSQLUserRepository
-import com.dw.service.admin.CreateUserService
-import com.dw.service.admin.CreateUserServiceInterface
 import com.dw.service.authentication.JwtService
 import com.dw.service.authentication.LoginServiceImpl
 import com.dw.service.authentication.LoginServiceInterface
+import com.dw.service.authentication.SignupService
+import com.dw.service.authentication.SignupServiceInterface
 import com.dw.service.author.AuthorServiceInterface
 import com.dw.service.author.AuthorServiceInterfaceImpl
 import com.dw.service.book.BookServiceImpl
@@ -60,7 +60,6 @@ fun Application.configureDependencyInjection() {
         provide<UserActivityLogRepository> { PSQLUserActivityLogRepository() }
         provide<UserPreferenceRepository> { PSQLUserPreferenceRepository() }
         provide<LoginServiceInterface> { LoginServiceImpl(userRepository = resolve(), jwtService = jwtService) }
-        provide<CreateUserServiceInterface> { CreateUserService(userRepository = resolve(), genreRepository = resolve(), userPreferenceRepository = resolve()) }
         provide<AuthorServiceInterface> { AuthorServiceInterfaceImpl(authorRepository = resolve()) }
         provide<BookServiceInterface> { BookServiceImpl(bookRepository = resolve(), authorService = resolve(), lendingRepository = resolve()) }
         provide<GenreServiceInterface> { GenreServiceImpl(genreRepository = resolve()) }
@@ -68,6 +67,15 @@ fun Application.configureDependencyInjection() {
         provide<LendingServiceInterface> { LendingServiceImpl(lendingRepository = resolve(), bookRepository = resolve(), activityLogRepository = resolve()) }
         provide<DashboardServiceInterface> { DashboardServiceImpl(bookRepository = resolve(), lendingRepository = resolve(), genreRepository = resolve(), activityLogRepository = resolve()) }
         provide<UserPreferenceServiceInterface> { UserPreferenceServiceImpl(userPreferenceRepository = resolve()) }
+        provide<SignupServiceInterface> {
+            SignupService(
+                userRepository = resolve(),
+                genreRepository = resolve(),
+                userPreferenceRepository = resolve(),
+                userPreferenceService = resolve(),
+                jwtService = jwtService
+            )
+        }
         provide<ExportJobRepository> { PSQLExportJobRepository() }
         provide<ExportJobServiceInterface> {
             ExportJobServiceImpl(

@@ -1,7 +1,6 @@
 package com.dw.plugins
 
 import com.dw.model.dto.Role
-import com.dw.routes.admin.adminCreateUser
 import com.dw.routes.aggregation.countUserBooks
 import com.dw.routes.aggregation.dashboardRoutes
 import com.dw.routes.author.authorRoutes
@@ -15,8 +14,9 @@ import com.dw.routes.metrics.metrics
 import com.dw.routes.preference.preferenceRoutes
 import com.dw.routes.user.login
 import com.dw.routes.user.logout
-import com.dw.service.admin.CreateUserServiceInterface
+import com.dw.routes.user.signup
 import com.dw.service.authentication.LoginServiceInterface
+import com.dw.service.authentication.SignupServiceInterface
 import com.dw.service.author.AuthorServiceInterface
 import com.dw.service.book.BookServiceInterface
 import com.dw.service.dashboard.DashboardServiceInterface
@@ -32,11 +32,13 @@ import io.ktor.server.routing.*
 
 suspend fun Application.configurePublicRouting() {
     val loginService = dependencies.resolve<LoginServiceInterface>()
+    val signupService = dependencies.resolve<SignupServiceInterface>()
     routing {
         helloWorld()
         metrics()
         login(loginService)
         logout()
+        signup(signupService)
     }
 }
 
@@ -62,17 +64,6 @@ suspend fun Application.configureAuthenticatedRouting() {
                 dashboardRoutes(dashboardService)
                 preferenceRoutes(preferenceService)
                 exportRoutes(exportJobService)
-            }
-        }
-    }
-}
-
-suspend fun Application.configureAdminRouting() {
-    val adminCreateUserService = dependencies.resolve<CreateUserServiceInterface>()
-    routing {
-        authenticate("auth-jwt") {
-            withRole(Role.ADMIN) {
-                adminCreateUser(adminCreateUserService)
             }
         }
     }
