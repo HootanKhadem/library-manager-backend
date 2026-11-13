@@ -17,6 +17,7 @@ class AuthorServiceInterfaceImpl(
     private val authorRepository: AuthorRepository
 ) : AuthorServiceInterface {
     override suspend fun createAuthor(author: Author): Author {
+        requireNotNull(author.userId) { "userId must not be null when creating an author" }
         return authorRepository.save(author)
     }
 
@@ -29,6 +30,7 @@ class AuthorServiceInterfaceImpl(
             ?: authorRepository.findByName(author.name)
         if (existing != null) return existing
 
+        requireNotNull(userId) { "userId must not be null when creating an author" }
         val now = LocalDateTime.now().toString()
         return authorRepository.save(
             author.copy(

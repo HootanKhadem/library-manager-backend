@@ -45,15 +45,17 @@ class BookServiceImpl(
     }
 
     override suspend fun createBook(book: Book): Book {
-        val resolvedAuthor = authorService.findOrCreateAuthor(book.author, book.userId)
+        val userId = requireNotNull(book.userId) { "userId must not be null when creating a book" }
+        val resolvedAuthor = authorService.findOrCreateAuthor(book.author, userId)
         val now = LocalDateTime.now().toString()
         return bookRepository.save(
             book.copy(
                 author = resolvedAuthor,
+                userId = userId,
                 createdOn = now,
-                createdBy = book.userId,
+                createdBy = userId,
                 modifiedOn = now,
-                modifiedBy = book.userId
+                modifiedBy = userId
             )
         )
     }

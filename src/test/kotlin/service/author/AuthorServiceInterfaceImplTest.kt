@@ -35,12 +35,19 @@ class AuthorServiceInterfaceImplTest {
 
     @Test
     fun `createAuthor should save author`() = runBlocking {
-        val author = Author(name = "John Doe", image = "john.jpg")
+        val author = Author(name = "John Doe", image = "john.jpg", userId = 1L)
         val created = authorService.createAuthor(author)
 
         assertNotNull(created.id)
         assertEquals(author.name, created.name)
         assertEquals(author.image, created.image)
+    }
+
+    @Test
+    fun `createAuthor throws when userId is null`(): Unit = runBlocking {
+        assertFailsWith<IllegalArgumentException> {
+            authorService.createAuthor(Author(name = "No Owner", image = "none.jpg"))
+        }
     }
 
     @Test
@@ -65,9 +72,9 @@ class AuthorServiceInterfaceImplTest {
 
     @Test
     fun `searchAuthors should return matching authors`() = runBlocking {
-        authorService.createAuthor(Author(name = "Stephen King", image = "king.jpg"))
-        authorService.createAuthor(Author(name = "Stephenie Meyer", image = "meyer.jpg"))
-        authorService.createAuthor(Author(name = "J.K. Rowling", image = "rowling.jpg"))
+        authorService.createAuthor(Author(name = "Stephen King", image = "king.jpg", userId = 1L))
+        authorService.createAuthor(Author(name = "Stephenie Meyer", image = "meyer.jpg", userId = 1L))
+        authorService.createAuthor(Author(name = "J.K. Rowling", image = "rowling.jpg", userId = 1L))
 
         val results = authorService.searchAuthors("Stephen")
 
@@ -78,8 +85,8 @@ class AuthorServiceInterfaceImplTest {
 
     @Test
     fun `searchAuthors with empty query should return all authors`() = runBlocking {
-        authorService.createAuthor(Author(name = "Author 1", image = "1.jpg"))
-        authorService.createAuthor(Author(name = "Author 2", image = "2.jpg"))
+        authorService.createAuthor(Author(name = "Author 1", image = "1.jpg", userId = 1L))
+        authorService.createAuthor(Author(name = "Author 2", image = "2.jpg", userId = 1L))
 
         val results = authorService.searchAuthors("")
 
@@ -88,7 +95,7 @@ class AuthorServiceInterfaceImplTest {
 
     @Test
     fun `searchAuthors with no match should return empty list`() = runBlocking {
-        authorService.createAuthor(Author(name = "Author 1", image = "1.jpg"))
+        authorService.createAuthor(Author(name = "Author 1", image = "1.jpg", userId = 1L))
 
         val results = authorService.searchAuthors("Nonexistent")
 
@@ -109,8 +116,15 @@ class AuthorServiceInterfaceImplTest {
     }
 
     @Test
+    fun `findOrCreateAuthor throws when creating with null userId`(): Unit = runBlocking {
+        assertFailsWith<IllegalArgumentException> {
+            authorService.findOrCreateAuthor(Author(name = "No Owner Either", image = "none.jpg"))
+        }
+    }
+
+    @Test
     fun `findOrCreateAuthor returns existing author by name`() = runBlocking {
-        val saved = authorService.createAuthor(Author(name = "Existing Author", image = "ex.jpg"))
+        val saved = authorService.createAuthor(Author(name = "Existing Author", image = "ex.jpg", userId = 1L))
         val result = authorService.findOrCreateAuthor(Author(name = "Existing Author", image = "other.jpg"))
 
         assertEquals(saved.id, result.id)
@@ -120,7 +134,7 @@ class AuthorServiceInterfaceImplTest {
 
     @Test
     fun `findOrCreateAuthor returns existing author by id`() = runBlocking {
-        val saved = authorService.createAuthor(Author(name = "Id Author", image = "id.jpg"))
+        val saved = authorService.createAuthor(Author(name = "Id Author", image = "id.jpg", userId = 1L))
         val result = authorService.findOrCreateAuthor(Author(id = saved.id, name = "Id Author", image = "id.jpg"))
 
         assertEquals(saved.id, result.id)
