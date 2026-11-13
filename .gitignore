@@ -32,3 +32,6 @@ ehthumbs.db
 Thumbs.db
 /docs/superpowers/plans/
 /.worktrees/
+# Added by code-review-graph
+.code-review-graph/
+/.claude/
