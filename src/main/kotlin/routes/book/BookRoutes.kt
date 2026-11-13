@@ -25,30 +25,21 @@ fun Route.bookRoutes(bookService: BookServiceInterface, openLibApi: OpenLibApi) 
         val isbn = call.parameters["isbn"]?.takeIf { it.isNotBlank() }
             ?: return@get call.respond(HttpStatusCode.BadRequest, "ISBN must not be blank")
 
-        val info = try {
+        val doc = try {
             openLibApi.getBookInfo(isbn)
         } catch (e: Exception) {
             log.warn("ISBN lookup failed for '{}': {}", isbn, e.message)
             return@get call.respond(HttpStatusCode.NotFound, "No book found for this ISBN")
         }
 
-        val authorName = info.authors.firstOrNull()?.key?.let { key ->
-            try {
-                openLibApi.getAuthorName(key)
-            } catch (e: Exception) {
-                log.warn("Author lookup failed for key '{}': {}", key, e.message)
-                null
-            }
-        }
-
         call.respond(
             HttpStatusCode.OK,
             BookLookupDto(
-                title = info.title,
-                author = authorName,
-                publisher = info.publishers.firstOrNull(),
-                publishedDate = info.publishDate,
-                pages = info.numberOfPages
+                title = doc.title,
+                author = doc.authorName.firstOrNull(),
+                publisher = doc.publisher.firstOrNull(),
+                publishedDate = doc.firstPublishYear?.toString(),
+                pages = doc.numberOfPagesMedian
             )
         )
     }
