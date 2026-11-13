@@ -26,6 +26,7 @@ import com.dw.service.export.ExportJobServiceInterface
 import com.dw.service.genre.GenreServiceInterface
 import com.dw.service.lending.LendingServiceInterface
 import com.dw.service.member.MemberServiceInterface
+import com.dw.service.openLib.OpenLibApi
 import com.dw.service.preference.UserPreferenceServiceInterface
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -55,12 +56,13 @@ suspend fun Application.configureAuthenticatedRouting() {
     val dashboardService = dependencies.resolve<DashboardServiceInterface>()
     val preferenceService = dependencies.resolve<UserPreferenceServiceInterface>()
     val exportJobService = dependencies.resolve<ExportJobServiceInterface>()
+    val openLibApi = dependencies.resolve<OpenLibApi>()
 
     routing {
         authenticate("auth-jwt") {
             withRole(Role.USER) {
                 authorRoutes(authorService)
-                bookRoutes(bookService)
+                bookRoutes(bookService, openLibApi)
                 genreRoutes(genreService)
                 memberRoutes(memberService)
                 lendingRoutes(lendingService)

@@ -55,3 +55,17 @@ data class OpenLibText(
     val type: String? = null,
     val value: String? = null
 )
+
+@Serializable
+data class OpenLibAuthorDto(
+    val name: String? = null
+)
+
+@Serializable
+data class BookLookupDto(
+    val title: String? = null,
+    val author: String? = null,
+    val publisher: String? = null,
+    val publishedDate: String? = null,
+    val pages: Int? = null
+)

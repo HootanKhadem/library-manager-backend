@@ -1,5 +1,6 @@
 package com.dw.service.openLib
 
+import com.dw.model.dto.openlib.OpenLibAuthorDto
 import com.dw.model.dto.openlib.OpenLibDto
 import com.google.gson.Gson
 import java.net.HttpURLConnection
@@ -17,7 +18,15 @@ class OpenLibApiImpl(
         return gson.fromJson(response, OpenLibDto::class.java)
     }
 
+    override fun getAuthorName(authorKey: String): String? {
+        require(authorKey.isNotBlank()) { "Author key must not be blank" }
+
+        val response = responseFetcher("$ROOT_URL${authorKey.trim()}.json")
+        return gson.fromJson(response, OpenLibAuthorDto::class.java).name
+    }
+
     private companion object {
+        const val ROOT_URL = "https://openlibrary.org"
         const val BASE_URL = "https://openlibrary.org/isbn/"
 
         fun fetchResponse(url: String): String {

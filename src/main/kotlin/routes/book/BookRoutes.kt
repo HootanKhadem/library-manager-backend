@@ -1,9 +1,11 @@
 package com.dw.routes.book
 
 import com.dw.model.dto.Book
+import com.dw.model.dto.openlib.BookLookupDto
 import com.dw.routes.pagination.pageParams
 import com.dw.service.book.BookHasLendingHistoryException
 import com.dw.service.book.BookServiceInterface
+import com.dw.service.openLib.OpenLibApi
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
@@ -15,7 +17,37 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 
-fun Route.bookRoutes(bookService: BookServiceInterface) {
+fun Route.bookRoutes(bookService: BookServiceInterface, openLibApi: OpenLibApi) {
+    get("/api/book/isbn/{isbn}") {
+        val isbn = call.parameters["isbn"]?.takeIf { it.isNotBlank() }
+            ?: return@get call.respond(HttpStatusCode.BadRequest, "ISBN must not be blank")
+
+        val info = try {
+            openLibApi.getBookInfo(isbn)
+        } catch (e: Exception) {
+            return@get call.respond(HttpStatusCode.NotFound, "No book found for this ISBN")
+        }
+
+        val authorName = info.authors.firstOrNull()?.key?.let { key ->
+            try {
+                openLibApi.getAuthorName(key)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        call.respond(
+            HttpStatusCode.OK,
+            BookLookupDto(
+                title = info.title,
+                author = authorName,
+                publisher = info.publishers.firstOrNull(),
+                publishedDate = info.publishDate,
+                pages = info.numberOfPages
+            )
+        )
+    }
+
     post("/api/book") {
         val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong()
             ?: return@post call.respond(HttpStatusCode.Unauthorized)

@@ -43,6 +43,8 @@ import com.dw.service.lending.LendingServiceImpl
 import com.dw.service.lending.LendingServiceInterface
 import com.dw.service.member.MemberServiceImpl
 import com.dw.service.member.MemberServiceInterface
+import com.dw.service.openLib.OpenLibApi
+import com.dw.service.openLib.OpenLibApiImpl
 import com.dw.service.preference.UserPreferenceServiceImpl
 import com.dw.service.preference.UserPreferenceServiceInterface
 import io.ktor.server.application.*
@@ -81,6 +83,7 @@ fun Application.configureDependencyInjection() {
         provide<LendingServiceInterface> { LendingServiceImpl(lendingRepository = resolve(), bookRepository = resolve(), activityLogRepository = resolve()) }
         provide<DashboardServiceInterface> { DashboardServiceImpl(bookRepository = resolve(), lendingRepository = resolve(), genreRepository = resolve(), activityLogRepository = resolve()) }
         provide<UserPreferenceServiceInterface> { UserPreferenceServiceImpl(userPreferenceRepository = resolve()) }
+        provide<OpenLibApi> { OpenLibApiImpl() }
         provide<SignupServiceInterface> {
             SignupService(
                 userRepository = resolve(),

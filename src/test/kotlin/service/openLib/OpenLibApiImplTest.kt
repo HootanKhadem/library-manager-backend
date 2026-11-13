@@ -43,6 +43,27 @@ class OpenLibApiImplTest {
         assertEquals(0, responseFetcher.callCount)
     }
 
+    @Test
+    fun `getAuthorName requests author endpoint and returns name`() {
+        val responseFetcher = MockResponseFetcher(response = """{ "name": "Roald Dahl" }""")
+        val api = OpenLibApiImpl(responseFetcher = responseFetcher)
+
+        val name = api.getAuthorName("/authors/OL34184A")
+
+        assertEquals(1, responseFetcher.callCount)
+        assertEquals("https://openlibrary.org/authors/OL34184A.json", responseFetcher.requestedUrl)
+        assertEquals("Roald Dahl", name)
+    }
+
+    @Test
+    fun `getAuthorName rejects blank key`() {
+        val responseFetcher = MockResponseFetcher(failure = AssertionError("request must not happen"))
+        val api = OpenLibApiImpl(responseFetcher = responseFetcher)
+
+        assertFailsWith<IllegalArgumentException> { api.getAuthorName("   ") }
+        assertEquals(0, responseFetcher.callCount)
+    }
+
     private class MockResponseFetcher(
         private val response: String = "",
         private val failure: Throwable? = null
