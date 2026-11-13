@@ -340,6 +340,30 @@ class BookRoutesTest : BaseRouteTest() {
     }
 
     @Test
+    fun `POST api book defaults status to OWNED when omitted from body`() = testApplication {
+        setupLibraryApp()
+        val token = createToken(userId = 83L)
+
+        val payload = gson.toJsonTree(bookPayload(isbn = "isbn-status-default", userId = 83L)).asJsonObject
+        payload.remove("status")
+        client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(payload.toString())
+        }
+
+        val response = client.get("/api/book?status=OWNED") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        val json = gson.fromJson(response.bodyAsText(), com.google.gson.JsonObject::class.java)
+        assertEquals(1, json.getAsJsonArray("items").size())
+
+        cleanup()
+    }
+
+    @Test
     fun `GET api book treats blank q as no filter`() = testApplication {
         setupLibraryApp()
         val token = createToken(userId = 82L)

@@ -33,7 +33,7 @@ class PSQLBookRepository : BookRepository {
             publisher = book.publisher
             quantity = book.quantity
             image = book.image
-            status = book.status
+            status = book.status ?: "OWNED"
             userId = book.userId
             createdOn = book.createdOn ?: LocalDateTime.now().toString()
             createdBy = book.createdBy
