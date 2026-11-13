@@ -7,6 +7,7 @@ import com.dw.service.book.BookHasLendingHistoryException
 import com.dw.service.book.BookServiceInterface
 import com.dw.service.openLib.OpenLibApi
 import io.ktor.http.HttpStatusCode
+import org.slf4j.LoggerFactory
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
@@ -17,6 +18,8 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 
+private val log = LoggerFactory.getLogger("com.dw.routes.book.BookRoutes")
+
 fun Route.bookRoutes(bookService: BookServiceInterface, openLibApi: OpenLibApi) {
     get("/api/book/isbn/{isbn}") {
         val isbn = call.parameters["isbn"]?.takeIf { it.isNotBlank() }
@@ -25,6 +28,7 @@ fun Route.bookRoutes(bookService: BookServiceInterface, openLibApi: OpenLibApi) 
         val info = try {
             openLibApi.getBookInfo(isbn)
         } catch (e: Exception) {
+            log.warn("ISBN lookup failed for '{}': {}", isbn, e.message)
             return@get call.respond(HttpStatusCode.NotFound, "No book found for this ISBN")
         }
 
@@ -32,6 +36,7 @@ fun Route.bookRoutes(bookService: BookServiceInterface, openLibApi: OpenLibApi) 
             try {
                 openLibApi.getAuthorName(key)
             } catch (e: Exception) {
+                log.warn("Author lookup failed for key '{}': {}", key, e.message)
                 null
             }
         }
