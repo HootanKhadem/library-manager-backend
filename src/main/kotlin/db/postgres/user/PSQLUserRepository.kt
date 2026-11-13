@@ -26,6 +26,9 @@ class PSQLUserRepository(private val config: ApplicationConfig? = null) : UserRe
         }
 
 
+    override suspend fun findById(id: Long): UserDTO? =
+        withTransaction { UserDAO.findById(id)?.toUserDto() }
+
     override suspend fun save(userDTO: UserDTO): UserDTO = withTransaction {
         UserDAO.new {
             updateFromDto(userDTO)

@@ -130,6 +130,68 @@ paths:
         '409':
           description: Email already registered
 
+  /auth/forgot-password:
+    post:
+      tags: [auth]
+      summary: Request a password reset email
+      description: >
+        Public endpoint. Always returns 200 with the same body, whether or not the email is registered
+        (prevents account enumeration). If registered, an email is sent containing a link to
+        `{FRONTEND_URL}/reset-password?token=<token>`. The token is single use and expires
+        (default 60 minutes). A new request invalidates any earlier link.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Request accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: If that email is registered, a reset link has been sent
+
+  /auth/reset-password:
+    post:
+      tags: [auth]
+      summary: Set a new password using an emailed reset token
+      description: >
+        Public endpoint. The frontend reset page reads `token` from the query string and posts it here
+        with the new password. Password rules match signup. Does not log the user in.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: password updated
+        '400':
+          description: Invalid or expired token, or weak password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: invalid or expired reset token
+
   /api/book:
     post:
       tags: [book]
@@ -838,6 +900,24 @@ components:
         modifiedBy:
           type: integer
           format: int64
+
+    ForgotPasswordRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+
+    ResetPasswordRequest:
+      type: object
+      required: [token, newPassword]
+      properties:
+        token:
+          type: string
+          description: Token from the `token` query parameter of the emailed link.
+        newPassword:
+          type: string
+          description: Minimum 8 characters, at least one uppercase letter, at least one digit.
 
     SignupRequest:
       type: object

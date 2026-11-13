@@ -8,7 +8,13 @@ import com.dw.db.LendingRepository
 import com.dw.db.MemberRepository
 import com.dw.db.UserActivityLogRepository
 import com.dw.db.UserPreferenceRepository
+import com.dw.db.PasswordResetTokenRepository
 import com.dw.db.UserRepository
+import com.dw.db.postgres.passwordreset.PSQLPasswordResetTokenRepository
+import com.dw.service.authentication.PasswordResetService
+import com.dw.service.authentication.PasswordResetServiceInterface
+import com.dw.service.email.EmailSender
+import com.dw.service.email.ResendEmailSender
 import com.dw.db.postgres.activitylog.PSQLUserActivityLogRepository
 import com.dw.db.postgres.book.PSQLBookRepository
 import com.dw.db.postgres.export.PSQLExportJobRepository
@@ -48,6 +54,14 @@ fun Application.configureDependencyInjection() {
     val exportDirectory = this.environment.config.propertyOrNull("ktor.export.directory")?.getString() ?: "exports"
     val exportRetentionHours = this.environment.config.propertyOrNull("ktor.export.retentionHours")?.getString()?.toLongOrNull() ?: 24L
 
+    val cfg = this.environment.config
+    val emailApiKey = cfg.propertyOrNull("ktor.email.resendApiKey")?.getString().orEmpty()
+    val emailApiUrl = cfg.propertyOrNull("ktor.email.resendApiUrl")?.getString()?.takeIf { it.isNotBlank() }
+        ?: ResendEmailSender.DEFAULT_ENDPOINT
+    val emailFrom = cfg.propertyOrNull("ktor.email.from")?.getString() ?: "onboarding@resend.dev"
+    val frontendUrl = cfg.propertyOrNull("ktor.frontendUrl")?.getString() ?: "http://localhost:3000"
+    val resetTtlMinutes = cfg.propertyOrNull("ktor.passwordReset.ttlMinutes")?.getString()?.toLongOrNull() ?: 60L
+
     dependencies {
         val jwtService = JwtService(jwtConfig)
         provide { jwtService }
@@ -74,6 +88,19 @@ fun Application.configureDependencyInjection() {
                 userPreferenceRepository = resolve(),
                 userPreferenceService = resolve(),
                 jwtService = jwtService
+            )
+        }
+        provide<EmailSender> {
+            ResendEmailSender(apiKey = emailApiKey, from = emailFrom, endpoint = emailApiUrl)
+        }
+        provide<PasswordResetTokenRepository> { PSQLPasswordResetTokenRepository() }
+        provide<PasswordResetServiceInterface> {
+            PasswordResetService(
+                userRepository = resolve(),
+                tokenRepository = resolve(),
+                emailSender = resolve(),
+                frontendUrl = frontendUrl,
+                tokenTtl = Duration.ofMinutes(resetTtlMinutes)
             )
         }
         provide<ExportJobRepository> { PSQLExportJobRepository() }

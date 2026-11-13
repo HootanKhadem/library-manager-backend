@@ -14,7 +14,9 @@ import com.dw.routes.metrics.metrics
 import com.dw.routes.preference.preferenceRoutes
 import com.dw.routes.user.login
 import com.dw.routes.user.logout
+import com.dw.routes.user.passwordReset
 import com.dw.routes.user.signup
+import com.dw.service.authentication.PasswordResetServiceInterface
 import com.dw.service.authentication.LoginServiceInterface
 import com.dw.service.authentication.SignupServiceInterface
 import com.dw.service.author.AuthorServiceInterface
@@ -33,12 +35,14 @@ import io.ktor.server.routing.*
 suspend fun Application.configurePublicRouting() {
     val loginService = dependencies.resolve<LoginServiceInterface>()
     val signupService = dependencies.resolve<SignupServiceInterface>()
+    val passwordResetService = dependencies.resolve<PasswordResetServiceInterface>()
     routing {
         helloWorld()
         metrics()
         login(loginService)
         logout()
         signup(signupService)
+        passwordReset(passwordResetService)
     }
 }
 
