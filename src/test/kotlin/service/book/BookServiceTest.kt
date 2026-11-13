@@ -49,7 +49,7 @@ class BookServiceTest {
         authorName: String = "Test Author",
         authorId: Long? = null,
         isbn: String = "isbn-001",
-        userId: Long? = null
+        userId: Long? = 1L
     ) = Book(
         name = "Test Book",
         author = Author(id = authorId, name = authorName, image = "author.jpg"),
@@ -78,7 +78,7 @@ class BookServiceTest {
 
     @Test
     fun `createBook reuses existing author by name`() = runBlocking {
-        val existingAuthor = authorService.createAuthor(Author(name = "Existing Author", image = "ex.jpg"))
+        val existingAuthor = authorService.createAuthor(Author(name = "Existing Author", image = "ex.jpg", userId = 1L))
 
         val request = bookRequest(authorName = "Existing Author", isbn = "isbn-reuse")
         val created = bookService.createBook(request)
@@ -92,12 +92,19 @@ class BookServiceTest {
 
     @Test
     fun `createBook reuses existing author by id`() = runBlocking {
-        val existingAuthor = authorService.createAuthor(Author(name = "Id Author", image = "id.jpg"))
+        val existingAuthor = authorService.createAuthor(Author(name = "Id Author", image = "id.jpg", userId = 1L))
 
         val request = bookRequest(authorName = "Id Author", authorId = existingAuthor.id, isbn = "isbn-by-id")
         val created = bookService.createBook(request)
 
         assertEquals(existingAuthor.id, created.author.id)
+    }
+
+    @Test
+    fun `createBook throws when userId is null`(): Unit = runBlocking {
+        val request = bookRequest(isbn = "isbn-no-owner", userId = null)
+
+        assertFailsWith<IllegalArgumentException> { bookService.createBook(request) }
     }
 
     // ── createBook: audit fields ──────────────────────────────────────────────
