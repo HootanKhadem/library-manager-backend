@@ -30,14 +30,20 @@ class PSQLBookRepositoryTest {
         transaction { exec("DROP ALL OBJECTS") }
     }
 
-    private fun createAuthorAndBook(isbn: String, userId: Long) {
+    private fun createAuthorAndBook(
+        isbn: String,
+        userId: Long,
+        name: String = "Book $isbn",
+        authorName: String = "Author for $isbn",
+        status: String = "OWNED",
+    ) {
         transaction {
             val authorDAO = AuthorDAO.new {
-                name = "Author for $isbn"
+                this.name = authorName
                 image = "image.jpg"
             }
             BookDAO.new {
-                name = "Book $isbn"
+                this.name = name
                 author = authorDAO
                 this.isbn = isbn
                 pages = 100
@@ -45,6 +51,7 @@ class PSQLBookRepositoryTest {
                 publisher = "Publisher"
                 quantity = 1
                 this.userId = userId
+                this.status = status
             }
         }
     }
@@ -99,5 +106,102 @@ class PSQLBookRepositoryTest {
         val page1 = repository.findAllByUserIdPaged(1L, page = 1, pageSize = 10)
         assertEquals(1, page1.size)
         assertEquals("Book isbn-u1", page1[0].name)
+    }
+
+    @Test
+    fun `findAllByUserIdPaged filters by search matching book name`() = runBlocking {
+        createAuthorAndBook("isbn-dune", 9L, name = "Dune")
+        createAuthorAndBook("isbn-ficciones", 9L, name = "Ficciones")
+
+        val results = repository.findAllByUserIdPaged(9L, page = 1, pageSize = 10, search = "dun")
+        assertEquals(1, results.size)
+        assertEquals("Dune", results[0].name)
+    }
+
+    @Test
+    fun `findAllByUserIdPaged filters by search matching isbn`() = runBlocking {
+        createAuthorAndBook("isbn-match-123", 9L)
+        createAuthorAndBook("isbn-other-456", 9L)
+
+        val results = repository.findAllByUserIdPaged(9L, page = 1, pageSize = 10, search = "match-123")
+        assertEquals(1, results.size)
+        assertEquals("isbn-match-123", results[0].isbn)
+    }
+
+    @Test
+    fun `findAllByUserIdPaged filters by search matching author name`() = runBlocking {
+        createAuthorAndBook("isbn-a1", 9L, authorName = "Frank Herbert")
+        createAuthorAndBook("isbn-a2", 9L, authorName = "Jorge Luis Borges")
+
+        val results = repository.findAllByUserIdPaged(9L, page = 1, pageSize = 10, search = "herbert")
+        assertEquals(1, results.size)
+        assertEquals("isbn-a1", results[0].isbn)
+    }
+
+    @Test
+    fun `findAllByUserIdPaged search is case-insensitive`() = runBlocking {
+        createAuthorAndBook("isbn-case", 9L, name = "Dune")
+
+        val results = repository.findAllByUserIdPaged(9L, page = 1, pageSize = 10, search = "DUNE")
+        assertEquals(1, results.size)
+    }
+
+    @Test
+    fun `findAllByUserIdPaged treats blank search as no filter`() = runBlocking {
+        createAuthorAndBook("isbn-b1", 9L)
+        createAuthorAndBook("isbn-b2", 9L)
+
+        val results = repository.findAllByUserIdPaged(9L, page = 1, pageSize = 10, search = "   ")
+        assertEquals(2, results.size)
+    }
+
+    @Test
+    fun `findAllByUserIdPaged escapes literal percent and underscore in search`() = runBlocking {
+        createAuthorAndBook("isbn-percent", 9L, name = "50% Off")
+        createAuthorAndBook("isbn-decoy", 9L, name = "50X Off")
+
+        val results = repository.findAllByUserIdPaged(9L, page = 1, pageSize = 10, search = "50%")
+        assertEquals(1, results.size)
+        assertEquals("50% Off", results[0].name)
+    }
+
+    @Test
+    fun `findAllByUserIdPaged filters by status`() = runBlocking {
+        createAuthorAndBook("isbn-owned", 9L, status = "OWNED")
+        createAuthorAndBook("isbn-lent", 9L, status = "LENT_OUT")
+
+        val results = repository.findAllByUserIdPaged(9L, page = 1, pageSize = 10, status = "LENT_OUT")
+        assertEquals(1, results.size)
+        assertEquals("isbn-lent", results[0].isbn)
+    }
+
+    @Test
+    fun `findAllByUserIdPaged combines search and status`() = runBlocking {
+        createAuthorAndBook("isbn-dune-owned", 9L, name = "Dune", status = "OWNED")
+        createAuthorAndBook("isbn-dune-lent", 9L, name = "Dune", status = "LENT_OUT")
+
+        val results = repository.findAllByUserIdPaged(9L, page = 1, pageSize = 10, search = "dune", status = "OWNED")
+        assertEquals(1, results.size)
+        assertEquals("isbn-dune-owned", results[0].isbn)
+    }
+
+    @Test
+    fun `findAllByUserIdPaged search never returns another user's books`() = runBlocking {
+        createAuthorAndBook("isbn-mine", 9L, name = "Shared Title")
+        createAuthorAndBook("isbn-theirs", 10L, name = "Shared Title")
+
+        val results = repository.findAllByUserIdPaged(9L, page = 1, pageSize = 10, search = "shared")
+        assertEquals(1, results.size)
+        assertEquals("isbn-mine", results[0].isbn)
+    }
+
+    @Test
+    fun `countByUserId reflects the filtered search count, not the whole library`() = runBlocking {
+        createAuthorAndBook("isbn-match-1", 9L, name = "Dune")
+        createAuthorAndBook("isbn-match-2", 9L, name = "Dune Messiah")
+        createAuthorAndBook("isbn-nomatch", 9L, name = "Ficciones")
+
+        assertEquals(2, repository.countByUserId(9L, search = "dune"))
+        assertEquals(3, repository.countByUserId(9L))
     }
 }
