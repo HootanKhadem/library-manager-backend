@@ -100,11 +100,11 @@ class BookRoutesTest : BaseRouteTest() {
     }
 
     @Test
-    fun `POST api book sets audit fields`() = testApplication {
+    fun `POST api book sets audit fields from the authenticated user`() = testApplication {
         setupLibraryApp()
-        val token = createToken()
+        val token = createToken(userId = 10L)
 
-        val payload = bookPayload(isbn = "isbn-audit-route", userId = 10L)
+        val payload = bookPayload(isbn = "isbn-audit-route")
         val response = client.post("/api/book") {
             header(HttpHeaders.Authorization, "Bearer $token")
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
@@ -117,6 +117,42 @@ class BookRoutesTest : BaseRouteTest() {
         assertEquals(10L, created.createdBy)
         assertEquals(10L, created.modifiedBy)
         assertNotNull(created.createdOn)
+
+        cleanup()
+    }
+
+    @Test
+    fun `POST api book ignores a client-supplied userId and uses the authenticated user instead`() = testApplication {
+        setupLibraryApp()
+        val token = createToken(userId = 10L)
+
+        // A caller claiming to be a different user in the body must not be able to
+        // attribute the book to that user - this is what let books land under
+        // user_id = NULL (invisible to everyone) when the body omitted it entirely.
+        val payload = bookPayload(isbn = "isbn-spoofed-userid", userId = 999L)
+        val response = client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(payload))
+        }
+
+        assertEquals(HttpStatusCode.Created, response.status)
+        val created = gson.fromJson(response.bodyAsText(), Book::class.java)
+        assertEquals(10L, created.userId)
+
+        cleanup()
+    }
+
+    @Test
+    fun `POST api book returns 401 when unauthenticated`() = testApplication {
+        setupLibraryApp()
+
+        val response = client.post("/api/book") {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(bookPayload(isbn = "isbn-unauth-route")))
+        }
+
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
 
         cleanup()
     }

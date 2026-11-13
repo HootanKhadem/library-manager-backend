@@ -17,8 +17,10 @@ import io.ktor.server.routing.put
 
 fun Route.bookRoutes(bookService: BookServiceInterface) {
     post("/api/book") {
+        val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong()
+            ?: return@post call.respond(HttpStatusCode.Unauthorized)
         val book = call.receive<Book>()
-        val created = bookService.createBook(book)
+        val created = bookService.createBook(book.copy(userId = userId))
         call.respond(HttpStatusCode.Created, created)
     }
 
