@@ -29,9 +29,7 @@ class SignupService(
             throw EmailAlreadyExistsException("Email already registered: ${request.email}")
         }
 
-        require(request.password.length >= 8) { "password must be at least 8 characters" }
-        require(request.password.any { it.isUpperCase() }) { "password must contain at least one uppercase letter" }
-        require(request.password.any { it.isDigit() }) { "password must contain at least one digit" }
+        PasswordUtil.requireStrong(request.password)
 
         request.preferences?.let { userPreferenceService.validatePreferences(it) }
 

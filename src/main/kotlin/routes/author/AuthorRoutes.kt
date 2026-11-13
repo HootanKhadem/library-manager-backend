@@ -14,8 +14,10 @@ import io.ktor.server.routing.post
 
 fun Route.authorRoutes(authorServiceInterface: AuthorServiceInterface) {
     post("/api/author") {
+        val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong()
+            ?: return@post call.respond(HttpStatusCode.Unauthorized)
         val author = call.receive<Author>()
-        val createdAuthor = authorServiceInterface.createAuthor(author)
+        val createdAuthor = authorServiceInterface.createAuthor(author.copy(userId = userId))
         call.respond(HttpStatusCode.Created, createdAuthor)
     }
 

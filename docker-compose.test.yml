@@ -1,0 +1,55 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: toumaar
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+    ports:
+      - "5423:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d toumaar"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/toumaar
+      DB_USERNAME: postgres
+      DB_PASSWORD: mysecretpassword
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: Admin1234
+      ADMIN_EMAIL: admin@example.com
+      JWT_SECRET: test-secret
+      JWT_ISSUER: test-issuer
+      JWT_AUDIENCE: test-audience
+      CORS_ALLOWED_ORIGIN: http://localhost:3000
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  seed:
+    image: postgres:16-alpine
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: mysecretpassword
+    volumes:
+      - ./docker/seed.sql:/seed.sql:ro
+    entrypoint: ["psql", "-h", "db", "-U", "postgres", "-d", "toumaar", "-v", "ON_ERROR_STOP=1", "-f", "/seed.sql"]
+    restart: "no"

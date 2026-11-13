@@ -23,10 +23,17 @@ ktor:
     openapi:
       file: ${SWAGGER_OPENAPI:openapi/documentation.yaml}
   psql-database:
-    url: ${DB_URL:jdbc:postgresql://localhost:5423/librax}
+    url: ${DB_URL:jdbc:postgresql://localhost:5423/toumaar}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:mysecretpassword}
     driver: ${DB_DRIVER:org.postgresql.Driver}
+  frontendUrl: ${FRONTEND_URL:http://localhost:3000}
+  email:
+    resendApiKey: ${RESEND_API_KEY:}
+    resendApiUrl: ${RESEND_API_URL:https://api.resend.com/emails}
+    from: ${EMAIL_FROM:onboarding@resend.dev}
+  passwordReset:
+    ttlMinutes: ${PASSWORD_RESET_TTL_MINUTES:60}
   export:
     directory: ${EXPORT_DIRECTORY:exports}
     retentionHours: ${EXPORT_RETENTION_HOURS:24}

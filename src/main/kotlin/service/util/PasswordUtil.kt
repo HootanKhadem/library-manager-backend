@@ -26,6 +26,12 @@ class PasswordUtil {
             return hashString(this, "SHA-256")
         }
 
+        fun requireStrong(password: String) {
+            require(password.length >= 8) { "password must be at least 8 characters" }
+            require(password.any { it.isUpperCase() }) { "password must contain at least one uppercase letter" }
+            require(password.any { it.isDigit() }) { "password must contain at least one digit" }
+        }
+
         fun verify(password: String, salt: String, hashedPassword: String): Boolean {
             return hashWithSalt(password, salt) == hashedPassword
         }

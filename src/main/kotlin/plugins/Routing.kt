@@ -14,7 +14,9 @@ import com.dw.routes.metrics.metrics
 import com.dw.routes.preference.preferenceRoutes
 import com.dw.routes.user.login
 import com.dw.routes.user.logout
+import com.dw.routes.user.passwordReset
 import com.dw.routes.user.signup
+import com.dw.service.authentication.PasswordResetServiceInterface
 import com.dw.service.authentication.LoginServiceInterface
 import com.dw.service.authentication.SignupServiceInterface
 import com.dw.service.author.AuthorServiceInterface
@@ -24,6 +26,7 @@ import com.dw.service.export.ExportJobServiceInterface
 import com.dw.service.genre.GenreServiceInterface
 import com.dw.service.lending.LendingServiceInterface
 import com.dw.service.member.MemberServiceInterface
+import com.dw.service.openLib.OpenLibApi
 import com.dw.service.preference.UserPreferenceServiceInterface
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -33,12 +36,14 @@ import io.ktor.server.routing.*
 suspend fun Application.configurePublicRouting() {
     val loginService = dependencies.resolve<LoginServiceInterface>()
     val signupService = dependencies.resolve<SignupServiceInterface>()
+    val passwordResetService = dependencies.resolve<PasswordResetServiceInterface>()
     routing {
         helloWorld()
         metrics()
         login(loginService)
         logout()
         signup(signupService)
+        passwordReset(passwordResetService)
     }
 }
 
@@ -51,12 +56,13 @@ suspend fun Application.configureAuthenticatedRouting() {
     val dashboardService = dependencies.resolve<DashboardServiceInterface>()
     val preferenceService = dependencies.resolve<UserPreferenceServiceInterface>()
     val exportJobService = dependencies.resolve<ExportJobServiceInterface>()
+    val openLibApi = dependencies.resolve<OpenLibApi>()
 
     routing {
         authenticate("auth-jwt") {
             withRole(Role.USER) {
                 authorRoutes(authorService)
-                bookRoutes(bookService)
+                bookRoutes(bookService, openLibApi)
                 genreRoutes(genreService)
                 memberRoutes(memberService)
                 lendingRoutes(lendingService)

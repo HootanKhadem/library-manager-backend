@@ -44,18 +44,15 @@ class AuthorRoutesTest : BaseRouteTest() {
     }
 
     @Test
-    fun `test create author with audit fields`() = testApplication {
+    fun `test create author with audit fields from the authenticated user`() = testApplication {
         setupLibraryApp()
-        val token = createToken()
+        val token = createToken(userId = 3L)
 
         val author = Author(
             name = "Audit Author",
             image = "audit.jpg",
-            userId = 3L,
             createdOn = "2024-01-01T00:00:00",
-            createdBy = 1L,
-            modifiedOn = "2024-01-01T00:00:00",
-            modifiedBy = 1L
+            modifiedOn = "2024-01-01T00:00:00"
         )
         val response = client.post("/api/author") {
             header(HttpHeaders.Authorization, "Bearer $token")
@@ -66,7 +63,20 @@ class AuthorRoutesTest : BaseRouteTest() {
         assertEquals(HttpStatusCode.Created, response.status)
         val created = gson.fromJson(response.bodyAsText(), Author::class.java)
         assertEquals(3L, created.userId)
-        assertEquals(1L, created.createdBy)
+
+        cleanup()
+    }
+
+    @Test
+    fun `test create author returns 401 when unauthenticated`() = testApplication {
+        setupLibraryApp()
+
+        val response = client.post("/api/author") {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(Author(name = "No Auth Author", image = "noauth.jpg")))
+        }
+
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
 
         cleanup()
     }

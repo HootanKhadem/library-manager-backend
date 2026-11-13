@@ -26,6 +26,12 @@ data class UserDTO(
 data class LoginDTO(val email: String, val password: String)
 
 @Serializable
+data class ForgotPasswordRequest(val email: String)
+
+@Serializable
+data class ResetPasswordRequest(val token: String, val newPassword: String)
+
+@Serializable
 data class SignupRequest(
     val name: String,
     val email: String,

@@ -2,7 +2,10 @@ package com.dw.routes.user
 
 import com.auth0.jwt.JWT
 import com.dw.EmailAlreadyExistsException
+import com.dw.model.dto.ForgotPasswordRequest
 import com.dw.model.dto.LoginDTO
+import com.dw.model.dto.ResetPasswordRequest
+import com.dw.service.authentication.PasswordResetServiceInterface
 import com.dw.model.dto.SignupRequest
 import com.dw.plugins.ACCESS_TOKEN_COOKIE
 import com.dw.plugins.REFRESH_TOKEN_COOKIE
@@ -47,6 +50,25 @@ fun Route.signup(signupService: SignupServiceInterface) {
             )
         } catch (e: EmailAlreadyExistsException) {
             call.respond(HttpStatusCode.Conflict, mapOf("error" to e.message))
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to e.message))
+        }
+    }
+}
+
+fun Route.passwordReset(service: PasswordResetServiceInterface) {
+    post("/auth/forgot-password") {
+        val request = call.receive<ForgotPasswordRequest>()
+        service.requestReset(request.email)
+        // Same response whether or not the email exists, so accounts cannot be enumerated.
+        call.respond(mapOf("message" to "If that email is registered, a reset link has been sent"))
+    }
+
+    post("/auth/reset-password") {
+        val request = call.receive<ResetPasswordRequest>()
+        try {
+            service.resetPassword(request.token, request.newPassword)
+            call.respond(mapOf("message" to "password updated"))
         } catch (e: IllegalArgumentException) {
             call.respond(HttpStatusCode.BadRequest, mapOf("error" to e.message))
         }
