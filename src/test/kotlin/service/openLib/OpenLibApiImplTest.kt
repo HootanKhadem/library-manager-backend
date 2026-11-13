@@ -6,32 +6,46 @@ import kotlin.test.assertFailsWith
 
 class OpenLibApiImplTest {
     @Test
-    fun `getBookInfo requests ISBN endpoint and maps response`() {
+    fun `getBookInfo requests the search endpoint and maps the first match`() {
         val responseFetcher = MockResponseFetcher(
             response = """
                 {
-                  "title": "Fantastic Mr. Fox",
-                  "publish_date": "October 1, 1988",
-                  "number_of_pages": 96,
-                  "isbn_10": ["0140328726"],
-                  "last_modified": {
-                    "type": "/type/datetime",
-                    "value": "2024-01-01T00:00:00.000000"
-                  }
+                  "numFound": 1,
+                  "docs": [
+                    {
+                      "title": "American Gods",
+                      "author_name": ["Neil Gaiman"],
+                      "first_publish_year": 2001,
+                      "publisher": ["William Morrow", "HarperCollins"],
+                      "number_of_pages_median": 576
+                    }
+                  ]
                 }
             """
         )
         val api = OpenLibApiImpl(responseFetcher = responseFetcher)
 
-        val book = api.getBookInfo(" 0140328726 ")
+        val doc = api.getBookInfo(" 9781472249081 ")
 
         assertEquals(1, responseFetcher.callCount)
-        assertEquals("https://openlibrary.org/isbn/0140328726.json", responseFetcher.requestedUrl)
-        assertEquals("Fantastic Mr. Fox", book.title)
-        assertEquals("October 1, 1988", book.publishDate)
-        assertEquals(96, book.numberOfPages)
-        assertEquals(listOf("0140328726"), book.isbn10)
-        assertEquals("2024-01-01T00:00:00.000000", book.lastModified?.value)
+        assertEquals(
+            "https://openlibrary.org/search.json?isbn=9781472249081" +
+                "&fields=title,author_name,first_publish_year,publisher,number_of_pages_median",
+            responseFetcher.requestedUrl
+        )
+        assertEquals("American Gods", doc.title)
+        assertEquals(listOf("Neil Gaiman"), doc.authorName)
+        assertEquals(2001, doc.firstPublishYear)
+        assertEquals(listOf("William Morrow", "HarperCollins"), doc.publisher)
+        assertEquals(576, doc.numberOfPagesMedian)
+    }
+
+    @Test
+    fun `getBookInfo throws when the search returns no matches`() {
+        val responseFetcher = MockResponseFetcher(response = """{ "numFound": 0, "docs": [] }""")
+        val api = OpenLibApiImpl(responseFetcher = responseFetcher)
+
+        assertFailsWith<NoSuchElementException> { api.getBookInfo("0000000000") }
     }
 
     @Test
@@ -40,27 +54,6 @@ class OpenLibApiImplTest {
         val api = OpenLibApiImpl(responseFetcher = responseFetcher)
 
         assertFailsWith<IllegalArgumentException> { api.getBookInfo("   ") }
-        assertEquals(0, responseFetcher.callCount)
-    }
-
-    @Test
-    fun `getAuthorName requests author endpoint and returns name`() {
-        val responseFetcher = MockResponseFetcher(response = """{ "name": "Roald Dahl" }""")
-        val api = OpenLibApiImpl(responseFetcher = responseFetcher)
-
-        val name = api.getAuthorName("/authors/OL34184A")
-
-        assertEquals(1, responseFetcher.callCount)
-        assertEquals("https://openlibrary.org/authors/OL34184A.json", responseFetcher.requestedUrl)
-        assertEquals("Roald Dahl", name)
-    }
-
-    @Test
-    fun `getAuthorName rejects blank key`() {
-        val responseFetcher = MockResponseFetcher(failure = AssertionError("request must not happen"))
-        val api = OpenLibApiImpl(responseFetcher = responseFetcher)
-
-        assertFailsWith<IllegalArgumentException> { api.getAuthorName("   ") }
         assertEquals(0, responseFetcher.callCount)
     }
 
