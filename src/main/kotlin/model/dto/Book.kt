@@ -10,7 +10,7 @@ data class Book(
     val translator: String? = null,
     val pages: Int,
     val isbn: String,
-    val publishedDate: String,
+    val publishedDate: String? = null,
     val publisher: String,
     val quantity: Int,
     val image: String? = null,

@@ -960,7 +960,7 @@ components:
 
     Book:
       type: object
-      required: [name, author, pages, isbn, publishedDate, publisher, quantity]
+      required: [name, author, pages, isbn, publisher, quantity]
       properties:
         id:
           type: integer
