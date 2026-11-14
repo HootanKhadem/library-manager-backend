@@ -18,7 +18,13 @@ class BookHasLendingHistoryException(val bookId: Long) :
 interface BookServiceInterface {
     suspend fun getBookById(id: Long): Book?
     suspend fun getAllBooks(userId: Long): List<Book>
-    suspend fun getAllBooksPaged(userId: Long, page: Int, pageSize: Int): PagedResponse<Book>
+    suspend fun getAllBooksPaged(
+        userId: Long,
+        page: Int,
+        pageSize: Int,
+        search: String? = null,
+        status: String? = null
+    ): PagedResponse<Book>
     suspend fun createBook(book: Book): Book
     suspend fun updateBook(id: Long, book: Book, requesterId: Long): Book?
 
@@ -38,9 +44,15 @@ class BookServiceImpl(
 
     override suspend fun getAllBooks(userId: Long): List<Book> = bookRepository.findAllByUserId(userId)
 
-    override suspend fun getAllBooksPaged(userId: Long, page: Int, pageSize: Int): PagedResponse<Book> {
-        val items = bookRepository.findAllByUserIdPaged(userId, page, pageSize)
-        val total = bookRepository.countByUserId(userId)
+    override suspend fun getAllBooksPaged(
+        userId: Long,
+        page: Int,
+        pageSize: Int,
+        search: String?,
+        status: String?
+    ): PagedResponse<Book> {
+        val items = bookRepository.findAllByUserIdPaged(userId, page, pageSize, search, status)
+        val total = bookRepository.countByUserId(userId, search, status)
         return PagedResponse.of(items, page, pageSize, total)
     }
 

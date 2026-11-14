@@ -284,6 +284,107 @@ class BookRoutesTest : BaseRouteTest() {
         cleanup()
     }
 
+    @Test
+    fun `GET api book filters by q`() = testApplication {
+        setupLibraryApp()
+        val token = createToken(userId = 80L)
+
+        client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(bookPayload(isbn = "isbn-q-match", userId = 80L).copy(name = "Dune")))
+        }
+        client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(bookPayload(isbn = "isbn-q-nomatch", userId = 80L).copy(name = "Ficciones")))
+        }
+
+        val response = client.get("/api/book?q=dune") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        val json = gson.fromJson(response.bodyAsText(), com.google.gson.JsonObject::class.java)
+        assertEquals(1, json.getAsJsonArray("items").size())
+        assertEquals(1, json.get("totalItems").asInt)
+
+        cleanup()
+    }
+
+    @Test
+    fun `GET api book filters by status`() = testApplication {
+        setupLibraryApp()
+        val token = createToken(userId = 81L)
+
+        client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(bookPayload(isbn = "isbn-status-owned", userId = 81L)))
+        }
+        client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(bookPayload(isbn = "isbn-status-lent", userId = 81L).copy(status = "LENT_OUT")))
+        }
+
+        val response = client.get("/api/book?status=LENT_OUT") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        val json = gson.fromJson(response.bodyAsText(), com.google.gson.JsonObject::class.java)
+        assertEquals(1, json.getAsJsonArray("items").size())
+
+        cleanup()
+    }
+
+    @Test
+    fun `POST api book defaults status to OWNED when omitted from body`() = testApplication {
+        setupLibraryApp()
+        val token = createToken(userId = 83L)
+
+        val payload = gson.toJsonTree(bookPayload(isbn = "isbn-status-default", userId = 83L)).asJsonObject
+        payload.remove("status")
+        client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(payload.toString())
+        }
+
+        val response = client.get("/api/book?status=OWNED") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        val json = gson.fromJson(response.bodyAsText(), com.google.gson.JsonObject::class.java)
+        assertEquals(1, json.getAsJsonArray("items").size())
+
+        cleanup()
+    }
+
+    @Test
+    fun `GET api book treats blank q as no filter`() = testApplication {
+        setupLibraryApp()
+        val token = createToken(userId = 82L)
+
+        client.post("/api/book") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(bookPayload(isbn = "isbn-blank-q", userId = 82L)))
+        }
+
+        val response = client.get("/api/book?q=") {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        val json = gson.fromJson(response.bodyAsText(), com.google.gson.JsonObject::class.java)
+        assertEquals(1, json.getAsJsonArray("items").size())
+
+        cleanup()
+    }
+
     // ── PUT /api/book id ──────────────────────────────────────────────────────
 
     @Test

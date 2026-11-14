@@ -56,7 +56,9 @@ fun Route.bookRoutes(bookService: BookServiceInterface, openLibApi: OpenLibApi) 
         val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong()
             ?: return@get call.respond(HttpStatusCode.Unauthorized)
         val (page, pageSize) = call.pageParams()
-        call.respond(HttpStatusCode.OK, bookService.getAllBooksPaged(userId, page, pageSize))
+        val search = call.request.queryParameters["q"]?.takeIf { it.isNotBlank() }
+        val status = call.request.queryParameters["status"]?.takeIf { it.isNotBlank() }
+        call.respond(HttpStatusCode.OK, bookService.getAllBooksPaged(userId, page, pageSize, search, status))
     }
 
     get("/api/book/{id}") {

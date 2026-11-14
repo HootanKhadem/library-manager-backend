@@ -212,6 +212,18 @@ class BookServiceTest {
         assertEquals(1, result.totalPages)
     }
 
+    @Test
+    fun `getAllBooksPaged passes search and status through to the repository`() = runBlocking {
+        bookService.createBook(bookRequest(isbn = "isbn-svc-dune", userId = 60L).copy(name = "Dune"))
+        bookService.createBook(bookRequest(isbn = "isbn-svc-other", userId = 60L).copy(name = "Other", status = "LENT_OUT"))
+
+        val result = bookService.getAllBooksPaged(60L, page = 1, pageSize = 10, search = "dune")
+
+        assertEquals(1, result.items.size)
+        assertEquals("Dune", result.items[0].name)
+        assertEquals(1, result.totalItems)
+    }
+
     // ── deleteBook ────────────────────────────────────────────────────────────
 
     @Test
