@@ -61,7 +61,7 @@ suspend fun Application.configureAuthenticatedRouting() {
     routing {
         authenticate("auth-jwt") {
             withRole(Role.USER) {
-                authorRoutes(authorService)
+                authorRoutes(authorService, bookService)
                 bookRoutes(bookService, openLibApi)
                 genreRoutes(genreService)
                 memberRoutes(memberService)

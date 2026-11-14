@@ -8,6 +8,7 @@ data class Author(
     val name: String,
     val image: String,
     val userId: Long? = null,
+    val bookCount: Long? = null,
     val createdOn: String? = null,
     val createdBy: Long? = null,
     val modifiedOn: String? = null,

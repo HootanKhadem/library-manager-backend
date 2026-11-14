@@ -149,4 +149,29 @@ class AuthorRoutesTest : BaseRouteTest() {
 
         cleanup()
     }
+
+    @Test
+    fun `GET api author by id returns own author with book count and 404 for another user`() = testApplication {
+        setupLibraryApp()
+        val owner = createToken(userId = 81L)
+        val other = createToken(userId = 82L)
+
+        val created = client.post("/api/author") {
+            header(HttpHeaders.Authorization, "Bearer $owner")
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(gson.toJson(Author(name = "Solo Author", image = "")))
+        }
+        val id = gson.fromJson(created.bodyAsText(), Author::class.java).id
+
+        val ok = client.get("/api/author/$id") { header(HttpHeaders.Authorization, "Bearer $owner") }
+        assertEquals(HttpStatusCode.OK, ok.status)
+        val body = gson.fromJson(ok.bodyAsText(), Author::class.java)
+        assertEquals("Solo Author", body.name)
+        assertEquals(0L, body.bookCount)
+
+        val notMine = client.get("/api/author/$id") { header(HttpHeaders.Authorization, "Bearer $other") }
+        assertEquals(HttpStatusCode.NotFound, notMine.status)
+
+        cleanup()
+    }
 }

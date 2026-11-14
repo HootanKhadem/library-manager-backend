@@ -31,7 +31,7 @@ class BookServiceTest {
     private val bookRepository = PSQLBookRepository()
     private val lendingRepository = PSQLLendingRepository()
     private val memberRepository = PSQLMemberRepository()
-    private val bookService = BookServiceImpl(bookRepository, authorService, lendingRepository)
+    private val bookService = BookServiceImpl(bookRepository, authorService, lendingRepository, com.dw.db.postgres.activitylog.PSQLUserActivityLogRepository())
 
     @BeforeTest
     fun setup() {
