@@ -72,4 +72,36 @@ class PSQLAuthorRepositoryTest {
         assertEquals(1, repository.countByUserId(10L))
         assertEquals(0, repository.countByUserId(11L))
     }
+
+    @Test
+    fun `findAllByUserIdPaged sorts by name`() = runBlocking {
+        repository.save(Author(name = "Charlie", image = "", userId = 8L))
+        repository.save(Author(name = "alice", image = "", userId = 8L))
+        repository.save(Author(name = "Bob", image = "", userId = 8L))
+
+        assertEquals(listOf("alice", "Bob", "Charlie"), repository.findAllByUserIdPaged(8L, 1, 10, sort = "name").map { it.name })
+        assertEquals(listOf("Charlie", "Bob", "alice"), repository.findAllByUserIdPaged(8L, 1, 10, sort = "name", desc = true).map { it.name })
+    }
+
+    @Test
+    fun `findAllByUserIdPaged sorts by book count including authors with none`() = runBlocking {
+        repository.save(Author(name = "None", image = "", userId = 9L))
+        val many = repository.save(Author(name = "Many", image = "", userId = 9L))
+        transaction {
+            repeat(2) { i ->
+                com.dw.db.mapping.BookDAO.new {
+                    name = "B$i"
+                    author = com.dw.db.mapping.AuthorDAO.findById(many.id!!)!!
+                    isbn = "bc-$i"
+                    pages = 1
+                    publisher = "P"
+                    quantity = 1
+                    userId = 9L
+                }
+            }
+        }
+
+        assertEquals(listOf("Many", "None"), repository.findAllByUserIdPaged(9L, 1, 10, sort = "bookCount", desc = true).map { it.name })
+        assertEquals(listOf("None", "Many"), repository.findAllByUserIdPaged(9L, 1, 10, sort = "bookCount").map { it.name })
+    }
 }

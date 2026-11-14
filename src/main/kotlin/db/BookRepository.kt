@@ -6,7 +6,7 @@ interface BookRepository {
     suspend fun save(book: Book): Book
     suspend fun findById(id: Long): Book?
     suspend fun findAllByUserId(userId: Long): List<Book>
-    suspend fun findAllByUserIdPaged(userId: Long, page: Int, pageSize: Int, search: String? = null, status: String? = null): List<Book>
+    suspend fun findAllByUserIdPaged(userId: Long, page: Int, pageSize: Int, search: String? = null, status: String? = null, sort: String? = null, desc: Boolean = false): List<Book>
     suspend fun findAllByAuthorId(userId: Long, authorId: Long): List<Book>
     suspend fun update(id: Long, book: Book): Book?
     suspend fun delete(id: Long): Boolean

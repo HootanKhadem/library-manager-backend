@@ -36,6 +36,8 @@ class PSQLBookRepositoryTest {
         name: String = "Book $isbn",
         authorName: String = "Author for $isbn",
         status: String = "OWNED",
+        pages: Int = 100,
+        language: String? = null,
     ) {
         transaction {
             val authorDAO = AuthorDAO.new {
@@ -46,7 +48,8 @@ class PSQLBookRepositoryTest {
                 this.name = name
                 author = authorDAO
                 this.isbn = isbn
-                pages = 100
+                this.pages = pages
+                this.language = language
                 publishedDate = "2020-01-01"
                 publisher = "Publisher"
                 quantity = 1
@@ -203,5 +206,35 @@ class PSQLBookRepositoryTest {
 
         assertEquals(2, repository.countByUserId(9L, search = "dune"))
         assertEquals(3, repository.countByUserId(9L))
+    }
+
+    @Test
+    fun `findAllByUserIdPaged sorts by a field ascending and descending`() = runBlocking {
+        createAuthorAndBook("s1", 20L, name = "Beta", pages = 300)
+        createAuthorAndBook("s2", 20L, name = "alpha", pages = 100)
+        createAuthorAndBook("s3", 20L, name = "Gamma", pages = 200)
+
+        val byName = repository.findAllByUserIdPaged(20L, 1, 10, sort = "name")
+        assertEquals(listOf("alpha", "Beta", "Gamma"), byName.map { it.name })
+
+        val byPagesDesc = repository.findAllByUserIdPaged(20L, 1, 10, sort = "pages", desc = true)
+        assertEquals(listOf(300, 200, 100), byPagesDesc.map { it.pages })
+    }
+
+    @Test
+    fun `findAllByUserIdPaged sorts by author name and by language`() = runBlocking {
+        createAuthorAndBook("a1", 21L, authorName = "Zed", language = "English")
+        createAuthorAndBook("a2", 21L, authorName = "Amy", language = "Persian")
+
+        assertEquals(listOf("Amy", "Zed"), repository.findAllByUserIdPaged(21L, 1, 10, sort = "author").map { it.author.name })
+        assertEquals(listOf("English", "Persian"), repository.findAllByUserIdPaged(21L, 1, 10, sort = "language").map { it.language })
+    }
+
+    @Test
+    fun `findAllByUserIdPaged falls back to id order for an unknown sort field`() = runBlocking {
+        createAuthorAndBook("u1", 22L, name = "Z")
+        createAuthorAndBook("u2", 22L, name = "A")
+
+        assertEquals(listOf("u1", "u2"), repository.findAllByUserIdPaged(22L, 1, 10, sort = "nope; drop table").map { it.isbn })
     }
 }

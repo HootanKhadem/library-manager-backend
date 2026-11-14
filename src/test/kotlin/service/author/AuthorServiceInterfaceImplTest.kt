@@ -76,7 +76,7 @@ class AuthorServiceInterfaceImplTest {
         authorService.createAuthor(Author(name = "Stephenie Meyer", image = "meyer.jpg", userId = 1L))
         authorService.createAuthor(Author(name = "J.K. Rowling", image = "rowling.jpg", userId = 1L))
 
-        val results = authorService.searchAuthors("Stephen")
+        val results = authorService.searchAuthors(1L, "Stephen")
 
         assertEquals(2, results.size)
         assertTrue(results.any { it.name == "Stephen King" })
@@ -88,7 +88,7 @@ class AuthorServiceInterfaceImplTest {
         authorService.createAuthor(Author(name = "Author 1", image = "1.jpg", userId = 1L))
         authorService.createAuthor(Author(name = "Author 2", image = "2.jpg", userId = 1L))
 
-        val results = authorService.searchAuthors("")
+        val results = authorService.searchAuthors(1L, "")
 
         assertEquals(2, results.size)
     }
@@ -97,7 +97,7 @@ class AuthorServiceInterfaceImplTest {
     fun `searchAuthors with no match should return empty list`() = runBlocking {
         authorService.createAuthor(Author(name = "Author 1", image = "1.jpg", userId = 1L))
 
-        val results = authorService.searchAuthors("Nonexistent")
+        val results = authorService.searchAuthors(1L, "Nonexistent")
 
         assertEquals(0, results.size)
     }
@@ -116,26 +116,65 @@ class AuthorServiceInterfaceImplTest {
     }
 
     @Test
-    fun `findOrCreateAuthor throws when creating with null userId`(): Unit = runBlocking {
-        assertFailsWith<IllegalArgumentException> {
-            authorService.findOrCreateAuthor(Author(name = "No Owner Either", image = "none.jpg"))
-        }
+    fun `findOrCreateAuthor matches by name ignoring case and surrounding spaces`() = runBlocking {
+        val saved = authorService.createAuthor(Author(name = "Case Author", image = "c.jpg", userId = 1L))
+        val result = authorService.findOrCreateAuthor(Author(name = "  case AUTHOR ", image = ""), userId = 1L)
+
+        assertEquals(saved.id, result.id)
+    }
+
+    @Test
+    fun `findOrCreateAuthor never reuses another user's author with the same name`() = runBlocking {
+        val theirs = authorService.createAuthor(Author(name = "Shared Name", image = "s.jpg", userId = 2L))
+        val mine = authorService.findOrCreateAuthor(Author(name = "Shared Name", image = ""), userId = 1L)
+
+        assertNotEquals(theirs.id, mine.id)
+        assertEquals(1L, mine.userId)
+    }
+
+    @Test
+    fun `findOrCreateAuthor ignores an author id that belongs to another user`() = runBlocking {
+        val theirs = authorService.createAuthor(Author(name = "Not Yours", image = "n.jpg", userId = 2L))
+        val result = authorService.findOrCreateAuthor(Author(id = theirs.id, name = "Not Yours", image = ""), userId = 1L)
+
+        assertNotEquals(theirs.id, result.id)
+        assertEquals(1L, result.userId)
+    }
+
+    @Test
+    fun `an explicit author id keeps two same-named authors distinct`() = runBlocking {
+        val first = authorService.createAuthor(Author(name = "Twin", image = "", userId = 1L))
+        val second = authorService.createAuthor(Author(name = "Twin", image = "", userId = 1L))
+
+        assertEquals(second.id, authorService.findOrCreateAuthor(Author(id = second.id, name = "Twin", image = ""), userId = 1L).id)
+        assertEquals(first.id, authorService.findOrCreateAuthor(Author(id = first.id, name = "Twin", image = ""), userId = 1L).id)
+    }
+
+    @Test
+    fun `searchAuthors only returns the callers authors and includes book counts`() = runBlocking {
+        authorService.createAuthor(Author(name = "Mine Searchable", image = "", userId = 1L))
+        authorService.createAuthor(Author(name = "Theirs Searchable", image = "", userId = 2L))
+
+        val results = authorService.searchAuthors(1L, "searchable")
+
+        assertEquals(listOf("Mine Searchable"), results.map { it.name })
+        assertEquals(0L, results[0].bookCount)
     }
 
     @Test
     fun `findOrCreateAuthor returns existing author by name`() = runBlocking {
         val saved = authorService.createAuthor(Author(name = "Existing Author", image = "ex.jpg", userId = 1L))
-        val result = authorService.findOrCreateAuthor(Author(name = "Existing Author", image = "other.jpg"))
+        val result = authorService.findOrCreateAuthor(Author(name = "Existing Author", image = "other.jpg"), userId = 1L)
 
         assertEquals(saved.id, result.id)
         // confirm no duplicate
-        assertEquals(1, authorService.searchAuthors("Existing Author").size)
+        assertEquals(1, authorService.searchAuthors(1L, "Existing Author").size)
     }
 
     @Test
     fun `findOrCreateAuthor returns existing author by id`() = runBlocking {
         val saved = authorService.createAuthor(Author(name = "Id Author", image = "id.jpg", userId = 1L))
-        val result = authorService.findOrCreateAuthor(Author(id = saved.id, name = "Id Author", image = "id.jpg"))
+        val result = authorService.findOrCreateAuthor(Author(id = saved.id, name = "Id Author", image = "id.jpg"), userId = 1L)
 
         assertEquals(saved.id, result.id)
     }

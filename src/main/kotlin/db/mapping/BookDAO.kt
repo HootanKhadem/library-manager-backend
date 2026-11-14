@@ -12,6 +12,7 @@ object BookTable : LongIdTable("book") {
     val name = varchar("name", 255)
     val author = reference("author_id", AuthorTable)
     val translator = varchar("translator", 255).nullable()
+    val language = varchar("language", 64).nullable()
     val pages = integer("pages")
     val isbn = varchar("isbn", 255).uniqueIndex()
     val publishedDate = varchar("published_date", 255).nullable()
@@ -35,6 +36,7 @@ class BookDAO(id: EntityID<Long>) : LongEntity(id) {
     var name by BookTable.name
     var author by AuthorDAO referencedOn BookTable.author
     var translator by BookTable.translator
+    var language by BookTable.language
     var pages by BookTable.pages
     var isbn by BookTable.isbn
     var publishedDate by BookTable.publishedDate
@@ -56,6 +58,7 @@ class BookDAO(id: EntityID<Long>) : LongEntity(id) {
         name = name,
         author = author.toAuthorDto(),
         translator = translator,
+        language = language,
         pages = pages,
         isbn = isbn,
         publishedDate = publishedDate,
@@ -77,6 +80,7 @@ class BookDAO(id: EntityID<Long>) : LongEntity(id) {
         this.name = dto.name
         this.author = authorDAO
         this.translator = dto.translator
+        this.language = dto.language
         this.pages = dto.pages
         this.isbn = dto.isbn
         this.publishedDate = dto.publishedDate

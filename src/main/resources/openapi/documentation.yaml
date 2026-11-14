@@ -971,6 +971,8 @@ components:
           $ref: '#/components/schemas/Author'
         translator:
           type: string
+        language:
+          type: string
         pages:
           type: integer
         isbn:

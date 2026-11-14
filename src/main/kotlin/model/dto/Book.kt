@@ -8,6 +8,7 @@ data class Book(
     val name: String,
     val author: Author,
     val translator: String? = null,
+    val language: String? = null,
     val pages: Int,
     val isbn: String,
     val publishedDate: String? = null,

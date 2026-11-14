@@ -3,6 +3,7 @@ package com.dw.routes.book
 import com.dw.model.dto.Book
 import com.dw.model.dto.openlib.BookLookupDto
 import com.dw.routes.pagination.pageParams
+import com.dw.routes.pagination.sortParams
 import com.dw.service.book.BookHasLendingHistoryException
 import com.dw.service.book.BookServiceInterface
 import com.dw.service.openLib.OpenLibApi
@@ -58,7 +59,8 @@ fun Route.bookRoutes(bookService: BookServiceInterface, openLibApi: OpenLibApi) 
         val (page, pageSize) = call.pageParams()
         val search = call.request.queryParameters["q"]?.takeIf { it.isNotBlank() }
         val status = call.request.queryParameters["status"]?.takeIf { it.isNotBlank() }
-        call.respond(HttpStatusCode.OK, bookService.getAllBooksPaged(userId, page, pageSize, search, status))
+        val (sort, desc) = call.sortParams()
+        call.respond(HttpStatusCode.OK, bookService.getAllBooksPaged(userId, page, pageSize, search, status, sort, desc))
     }
 
     get("/api/book/{id}") {

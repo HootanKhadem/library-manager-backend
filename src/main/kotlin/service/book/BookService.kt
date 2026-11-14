@@ -26,7 +26,9 @@ interface BookServiceInterface {
         page: Int,
         pageSize: Int,
         search: String? = null,
-        status: String? = null
+        status: String? = null,
+        sort: String? = null,
+        desc: Boolean = false
     ): PagedResponse<Book>
     suspend fun getBooksByAuthor(userId: Long, authorId: Long): List<Book>
     suspend fun createBook(book: Book): Book
@@ -54,10 +56,12 @@ class BookServiceImpl(
         page: Int,
         pageSize: Int,
         search: String?,
-        status: String?
+        status: String?,
+        sort: String?,
+        desc: Boolean
     ): PagedResponse<Book> {
         // List rows omit the (large, inline) cover images; GET /api/book/{id} returns them.
-        val items = bookRepository.findAllByUserIdPaged(userId, page, pageSize, search, status)
+        val items = bookRepository.findAllByUserIdPaged(userId, page, pageSize, search, status, sort, desc)
             .map { it.copy(image = null, backImage = null) }
         val total = bookRepository.countByUserId(userId, search, status)
         return PagedResponse.of(items, page, pageSize, total)
@@ -93,7 +97,7 @@ class BookServiceImpl(
         if (existing.userId != requesterId) return null
         // Ownership must not be transferable via the request body: pin userId/modifiedBy to the
         // verified owner, regardless of what the caller put in the body.
-        val resolvedAuthor = authorService.findOrCreateAuthor(book.author, existing.userId)
+        val resolvedAuthor = authorService.findOrCreateAuthor(book.author, requesterId)
         val updated = bookRepository.update(
             id,
             book.copy(author = resolvedAuthor, userId = existing.userId, modifiedBy = requesterId)

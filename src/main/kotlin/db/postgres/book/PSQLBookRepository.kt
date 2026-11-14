@@ -5,8 +5,11 @@ import com.dw.db.mapping.AuthorDAO
 import com.dw.db.mapping.AuthorTable
 import com.dw.db.mapping.BookDAO
 import com.dw.db.mapping.BookTable
+import com.dw.db.mapping.GenreTable
 import com.dw.db.withTransaction
 import com.dw.model.dto.Book
+import org.jetbrains.exposed.v1.core.Expression
+import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
@@ -27,6 +30,7 @@ class PSQLBookRepository : BookRepository {
             name = book.name
             author = authorDAO
             translator = book.translator
+            language = book.language
             pages = book.pages
             isbn = book.isbn
             publishedDate = book.publishedDate
@@ -57,11 +61,15 @@ class PSQLBookRepository : BookRepository {
         pageSize: Int,
         search: String?,
         status: String?,
+        sort: String?,
+        desc: Boolean,
     ): List<Book> = withTransaction {
+        val order = if (desc) SortOrder.DESC else SortOrder.ASC
         val query = (BookTable innerJoin AuthorTable)
+            .join(GenreTable, JoinType.LEFT, BookTable.genreId, GenreTable.id)
             .selectAll()
             .where { bookFilter(userId, search, status) }
-            .orderBy(BookTable.id to SortOrder.ASC)
+            .orderBy(*sortColumn(sort).map { it to order }.toTypedArray(), BookTable.id to SortOrder.ASC)
             .limit(pageSize)
             .offset((page - 1).toLong() * pageSize)
         BookDAO.wrapRows(query).map { it.toBookDto() }
@@ -107,6 +115,24 @@ class PSQLBookRepository : BookRepository {
         BookDAO.find {
             (BookTable.userId eq userId) and (BookTable.createdOn like "$yearMonth%")
         }.count()
+    }
+
+    // Whitelist of sortable fields; unknown names fall back to id so a bad param can't break the query.
+    private fun sortColumn(sort: String?): List<Expression<*>> = when (sort) {
+        "name" -> listOf(BookTable.name.lowerCase())
+        "author" -> listOf(AuthorTable.name.lowerCase())
+        "genre" -> listOf(GenreTable.name.lowerCase())
+        "translator" -> listOf(BookTable.translator)
+        "language" -> listOf(BookTable.language)
+        "pages" -> listOf(BookTable.pages)
+        "isbn" -> listOf(BookTable.isbn)
+        "publishedDate" -> listOf(BookTable.publishedDate)
+        "publisher" -> listOf(BookTable.publisher.lowerCase())
+        "quantity" -> listOf(BookTable.quantity)
+        "status" -> listOf(BookTable.status)
+        "rating" -> listOf(BookTable.rating)
+        "createdOn" -> listOf(BookTable.createdOn)
+        else -> emptyList()
     }
 
     private fun bookFilter(userId: Long, search: String?, status: String?): Op<Boolean> {
