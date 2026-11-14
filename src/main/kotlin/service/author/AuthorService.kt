@@ -10,6 +10,7 @@ interface AuthorServiceInterface {
     suspend fun createAuthor(author: Author): Author
     suspend fun searchAuthors(query: String): List<Author>
     suspend fun findOrCreateAuthor(author: Author, userId: Long? = null): Author
+    suspend fun getAuthorById(userId: Long, id: Long): Author?
     suspend fun getAllAuthorsPaged(userId: Long, page: Int, pageSize: Int): PagedResponse<Author>
 }
 
@@ -42,6 +43,11 @@ class AuthorServiceInterfaceImpl(
             )
         )
     }
+
+    override suspend fun getAuthorById(userId: Long, id: Long): Author? =
+        authorRepository.findById(id)
+            ?.takeIf { it.userId == userId }
+            ?.let { it.copy(bookCount = authorRepository.countBooks(id)) }
 
     override suspend fun getAllAuthorsPaged(userId: Long, page: Int, pageSize: Int): PagedResponse<Author> {
         val items = authorRepository.findAllByUserIdPaged(userId, page, pageSize)

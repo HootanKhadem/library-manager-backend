@@ -29,6 +29,16 @@ fun Route.authorRoutes(authorServiceInterface: AuthorServiceInterface, bookServi
         call.respond(HttpStatusCode.OK, authorServiceInterface.getAllAuthorsPaged(userId, page, pageSize))
     }
 
+    get("/api/author/{id}") {
+        val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong()
+            ?: return@get call.respond(HttpStatusCode.Unauthorized)
+        val id = call.parameters["id"]?.toLongOrNull()
+            ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid author ID")
+        val author = authorServiceInterface.getAuthorById(userId, id)
+            ?: return@get call.respond(HttpStatusCode.NotFound, "Author not found")
+        call.respond(HttpStatusCode.OK, author)
+    }
+
     get("/api/author/{id}/books") {
         val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong()
             ?: return@get call.respond(HttpStatusCode.Unauthorized)
