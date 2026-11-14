@@ -1,6 +1,7 @@
 package com.dw.routes.author
 
 import com.dw.model.dto.Author
+import com.dw.model.dto.MergeAuthorsRequest
 import com.dw.routes.pagination.pageParams
 import com.dw.routes.pagination.sortParams
 import com.dw.service.author.AuthorServiceInterface
@@ -47,6 +48,30 @@ fun Route.authorRoutes(authorServiceInterface: AuthorServiceInterface, bookServi
         val authorId = call.parameters["id"]?.toLongOrNull()
             ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid author ID")
         call.respond(HttpStatusCode.OK, bookService.getBooksByAuthor(userId, authorId))
+    }
+
+    post("/api/author/merge/preview") {
+        val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong()
+            ?: return@post call.respond(HttpStatusCode.Unauthorized)
+        val request = call.receive<MergeAuthorsRequest>()
+        val preview = try {
+            authorServiceInterface.previewMerge(userId, request)
+        } catch (e: IllegalArgumentException) {
+            return@post call.respond(HttpStatusCode.BadRequest, e.message ?: "Invalid merge request")
+        } ?: return@post call.respond(HttpStatusCode.NotFound, "Author not found")
+        call.respond(HttpStatusCode.OK, preview)
+    }
+
+    post("/api/author/merge") {
+        val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong()
+            ?: return@post call.respond(HttpStatusCode.Unauthorized)
+        val request = call.receive<MergeAuthorsRequest>()
+        val merged = try {
+            authorServiceInterface.mergeAuthors(userId, request)
+        } catch (e: IllegalArgumentException) {
+            return@post call.respond(HttpStatusCode.BadRequest, e.message ?: "Invalid merge request")
+        } ?: return@post call.respond(HttpStatusCode.NotFound, "Author not found")
+        call.respond(HttpStatusCode.OK, merged)
     }
 
     get("/api/author/search") {
