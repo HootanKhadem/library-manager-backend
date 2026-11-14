@@ -14,7 +14,7 @@ object BookTable : LongIdTable("book") {
     val translator = varchar("translator", 255).nullable()
     val pages = integer("pages")
     val isbn = varchar("isbn", 255).uniqueIndex()
-    val publishedDate = varchar("published_date", 255)
+    val publishedDate = varchar("published_date", 255).nullable()
     val publisher = varchar("publisher", 255)
     val quantity = integer("quantity")
     val image = text("image").nullable()
