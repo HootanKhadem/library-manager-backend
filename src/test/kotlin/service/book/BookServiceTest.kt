@@ -86,7 +86,7 @@ class BookServiceTest {
         assertEquals(existingAuthor.id, created.author.id)
 
         // confirm no duplicate author was created
-        val foundAuthors = authorService.searchAuthors("Existing Author")
+        val foundAuthors = authorService.searchAuthors(1L, "Existing Author")
         assertEquals(1, foundAuthors.size)
     }
 

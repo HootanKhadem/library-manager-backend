@@ -50,8 +50,10 @@ fun Route.authorRoutes(authorServiceInterface: AuthorServiceInterface, bookServi
     }
 
     get("/api/author/search") {
+        val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong()
+            ?: return@get call.respond(HttpStatusCode.Unauthorized)
         val query = call.request.queryParameters["query"] ?: ""
-        val authors = authorServiceInterface.searchAuthors(query)
+        val authors = authorServiceInterface.searchAuthors(userId, query)
         call.respond(HttpStatusCode.OK, authors)
     }
 }

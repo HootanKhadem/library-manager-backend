@@ -8,8 +8,8 @@ import java.time.LocalDateTime
 
 interface AuthorServiceInterface {
     suspend fun createAuthor(author: Author): Author
-    suspend fun searchAuthors(query: String): List<Author>
-    suspend fun findOrCreateAuthor(author: Author, userId: Long? = null): Author
+    suspend fun searchAuthors(userId: Long, query: String): List<Author>
+    suspend fun findOrCreateAuthor(author: Author, userId: Long): Author
     suspend fun getAuthorById(userId: Long, id: Long): Author?
     suspend fun getAllAuthorsPaged(userId: Long, page: Int, pageSize: Int, sort: String? = null, desc: Boolean = false): PagedResponse<Author>
 }
@@ -22,19 +22,22 @@ class AuthorServiceInterfaceImpl(
         return authorRepository.save(author)
     }
 
-    override suspend fun searchAuthors(query: String): List<Author> {
-        return authorRepository.searchByName(query)
-    }
+    override suspend fun searchAuthors(userId: Long, query: String): List<Author> =
+        authorRepository.searchByName(userId, query)
+            .map { it.copy(bookCount = authorRepository.countBooks(it.id!!)) }
 
-    override suspend fun findOrCreateAuthor(author: Author, userId: Long?): Author {
-        val existing = author.id?.let { authorRepository.findById(it) }
-            ?: authorRepository.findByName(author.name)
+    override suspend fun findOrCreateAuthor(author: Author, userId: Long): Author {
+        // An explicit id wins (that is how two authors with the same name stay distinct), but only
+        // if it is the caller's own author. Otherwise match this user's author by name.
+        val existing = author.id?.let { authorRepository.findById(it) }?.takeIf { it.userId == userId }
+            ?: authorRepository.findByName(userId, author.name)
         if (existing != null) return existing
 
-        requireNotNull(userId) { "userId must not be null when creating an author" }
         val now = LocalDateTime.now().toString()
         return authorRepository.save(
             author.copy(
+                id = null,
+                name = author.name.trim(),
                 userId = userId,
                 createdOn = now,
                 createdBy = userId,

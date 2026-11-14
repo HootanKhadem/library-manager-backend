@@ -97,7 +97,7 @@ class BookServiceImpl(
         if (existing.userId != requesterId) return null
         // Ownership must not be transferable via the request body: pin userId/modifiedBy to the
         // verified owner, regardless of what the caller put in the body.
-        val resolvedAuthor = authorService.findOrCreateAuthor(book.author, existing.userId)
+        val resolvedAuthor = authorService.findOrCreateAuthor(book.author, requesterId)
         val updated = bookRepository.update(
             id,
             book.copy(author = resolvedAuthor, userId = existing.userId, modifiedBy = requesterId)

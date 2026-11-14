@@ -9,6 +9,7 @@ import com.dw.model.dto.Author
 import org.jetbrains.exposed.v1.core.Expression
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.count
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.like
@@ -23,16 +24,24 @@ class PSQLAuthorRepository : AuthorRepository {
         }.toAuthorDto()
     }
 
-    override suspend fun searchByName(name: String): List<Author> = withTransaction {
-        AuthorDAO.find { AuthorTable.name.lowerCase() like "%${name.lowercase()}%" }
+    // Authors belong to a user: lookups must never see (or attach books to) another user's authors.
+    override suspend fun searchByName(userId: Long, name: String, limit: Int): List<Author> = withTransaction {
+        val pattern = "%${escapeLike(name.trim().lowercase())}%"
+        AuthorDAO.find { (AuthorTable.userId eq userId) and (AuthorTable.name.lowerCase() like pattern) }
+            .orderBy(AuthorTable.name.lowerCase() to SortOrder.ASC, AuthorTable.id to SortOrder.ASC)
+            .limit(limit)
             .map { it.toAuthorDto() }
     }
 
-    override suspend fun findByName(name: String): Author? = withTransaction {
-        AuthorDAO.find { AuthorTable.name.lowerCase() eq name.lowercase() }
+    override suspend fun findByName(userId: Long, name: String): Author? = withTransaction {
+        AuthorDAO.find { (AuthorTable.userId eq userId) and (AuthorTable.name.lowerCase() eq name.trim().lowercase()) }
+            .orderBy(AuthorTable.id to SortOrder.ASC)
             .firstOrNull()
             ?.toAuthorDto()
     }
+
+    private fun escapeLike(s: String): String =
+        s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
     override suspend fun findById(id: Long): Author? = withTransaction {
         AuthorDAO.findById(id)?.toAuthorDto()
