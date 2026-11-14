@@ -109,6 +109,45 @@ class AuthorRoutesTest : BaseRouteTest() {
         cleanup()
     }
 
+    // ── POST /api/author/merge ───────────────────────────────────────────────
+
+    @Test
+    fun `POST api author merge merges, 400 on bad request, 404 for another user, 401 unauthenticated`() = testApplication {
+        setupLibraryApp()
+        val owner = createToken(userId = 91L)
+        val other = createToken(userId = 92L)
+
+        suspend fun create(name: String, token: String) = gson.fromJson(
+            client.post("/api/author") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+                header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                setBody(gson.toJson(Author(name = name, image = "")))
+            }.bodyAsText(), Author::class.java
+        ).id!!
+        suspend fun merge(token: String?, body: String) = client.post("/api/author/merge") {
+            token?.let { header(HttpHeaders.Authorization, "Bearer $it") }
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(body)
+        }
+
+        val target = create("Target", owner)
+        val source = create("Source", owner)
+        val foreign = create("Foreign", other)
+
+        assertEquals(HttpStatusCode.Unauthorized, merge(null, """{"targetId":$target,"sourceIds":[$source]}""").status)
+        assertEquals(HttpStatusCode.BadRequest, merge(owner, """{"targetId":$target,"sourceIds":[]}""").status)
+        assertEquals(HttpStatusCode.BadRequest, merge(owner, """{"targetId":$target,"sourceIds":[$target]}""").status)
+        assertEquals(HttpStatusCode.NotFound, merge(owner, """{"targetId":$target,"sourceIds":[$foreign]}""").status)
+
+        val ok = merge(owner, """{"targetId":$target,"sourceIds":[$source],"name":"Merged"}""")
+        assertEquals(HttpStatusCode.OK, ok.status)
+        assertEquals("Merged", gson.fromJson(ok.bodyAsText(), Author::class.java).name)
+        val gone = client.get("/api/author/$source") { header(HttpHeaders.Authorization, "Bearer $owner") }
+        assertEquals(HttpStatusCode.NotFound, gone.status)
+
+        cleanup()
+    }
+
     // ── GET /api/author (paginated) ──────────────────────────────────────────
 
     @Test
