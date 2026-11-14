@@ -11,7 +11,7 @@ interface AuthorServiceInterface {
     suspend fun searchAuthors(query: String): List<Author>
     suspend fun findOrCreateAuthor(author: Author, userId: Long? = null): Author
     suspend fun getAuthorById(userId: Long, id: Long): Author?
-    suspend fun getAllAuthorsPaged(userId: Long, page: Int, pageSize: Int): PagedResponse<Author>
+    suspend fun getAllAuthorsPaged(userId: Long, page: Int, pageSize: Int, sort: String? = null, desc: Boolean = false): PagedResponse<Author>
 }
 
 class AuthorServiceInterfaceImpl(
@@ -49,8 +49,8 @@ class AuthorServiceInterfaceImpl(
             ?.takeIf { it.userId == userId }
             ?.let { it.copy(bookCount = authorRepository.countBooks(id)) }
 
-    override suspend fun getAllAuthorsPaged(userId: Long, page: Int, pageSize: Int): PagedResponse<Author> {
-        val items = authorRepository.findAllByUserIdPaged(userId, page, pageSize)
+    override suspend fun getAllAuthorsPaged(userId: Long, page: Int, pageSize: Int, sort: String?, desc: Boolean): PagedResponse<Author> {
+        val items = authorRepository.findAllByUserIdPaged(userId, page, pageSize, sort, desc)
             .map { it.copy(bookCount = authorRepository.countBooks(it.id!!)) }
         val total = authorRepository.countByUserId(userId)
         return PagedResponse.of(items, page, pageSize, total)

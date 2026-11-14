@@ -6,10 +6,14 @@ import com.dw.db.mapping.AuthorTable
 import com.dw.db.mapping.BookTable
 import com.dw.db.withTransaction
 import com.dw.model.dto.Author
+import org.jetbrains.exposed.v1.core.Expression
+import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.count
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.like
 import org.jetbrains.exposed.v1.core.lowerCase
+import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 
 class PSQLAuthorRepository : AuthorRepository {
@@ -34,12 +38,41 @@ class PSQLAuthorRepository : AuthorRepository {
         AuthorDAO.findById(id)?.toAuthorDto()
     }
 
-    override suspend fun findAllByUserIdPaged(userId: Long, page: Int, pageSize: Int): List<Author> = withTransaction {
-        AuthorDAO.find { AuthorTable.userId eq userId }
-            .orderBy(AuthorTable.id to SortOrder.ASC)
-            .limit(pageSize)
-            .offset((page - 1).toLong() * pageSize)
-            .map { it.toAuthorDto() }
+    override suspend fun findAllByUserIdPaged(
+        userId: Long,
+        page: Int,
+        pageSize: Int,
+        sort: String?,
+        desc: Boolean,
+    ): List<Author> = withTransaction {
+        val order = if (desc) SortOrder.DESC else SortOrder.ASC
+        val offset = (page - 1).toLong() * pageSize
+        if (sort == "bookCount") {
+            // Order by the number of books: left join so authors with 0 books still appear.
+            val bookCount = BookTable.id.count()
+            val ids = AuthorTable
+                .join(BookTable, JoinType.LEFT, AuthorTable.id, BookTable.author)
+                .select(AuthorTable.id, bookCount)
+                .where { AuthorTable.userId eq userId }
+                .groupBy(AuthorTable.id)
+                .orderBy(bookCount to order, AuthorTable.id to SortOrder.ASC)
+                .limit(pageSize)
+                .offset(offset)
+                .map { it[AuthorTable.id].value }
+            ids.mapNotNull { AuthorDAO.findById(it)?.toAuthorDto() }
+        } else {
+            val column: Expression<*>? = when (sort) {
+                "name" -> AuthorTable.name.lowerCase()
+                "createdOn" -> AuthorTable.createdOn
+                else -> null
+            }
+            val orderBy = listOfNotNull(column?.let { it to order }) + (AuthorTable.id to SortOrder.ASC)
+            AuthorDAO.find { AuthorTable.userId eq userId }
+                .orderBy(*orderBy.toTypedArray())
+                .limit(pageSize)
+                .offset(offset)
+                .map { it.toAuthorDto() }
+        }
     }
 
     override suspend fun countBooks(authorId: Long): Long = withTransaction {

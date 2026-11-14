@@ -2,6 +2,7 @@ package com.dw.routes.author
 
 import com.dw.model.dto.Author
 import com.dw.routes.pagination.pageParams
+import com.dw.routes.pagination.sortParams
 import com.dw.service.author.AuthorServiceInterface
 import com.dw.service.book.BookServiceInterface
 import io.ktor.http.HttpStatusCode
@@ -26,7 +27,8 @@ fun Route.authorRoutes(authorServiceInterface: AuthorServiceInterface, bookServi
         val userId = call.principal<JWTPrincipal>()?.payload?.getClaim("userId")?.asLong()
             ?: return@get call.respond(HttpStatusCode.Unauthorized)
         val (page, pageSize) = call.pageParams()
-        call.respond(HttpStatusCode.OK, authorServiceInterface.getAllAuthorsPaged(userId, page, pageSize))
+        val (sort, desc) = call.sortParams()
+        call.respond(HttpStatusCode.OK, authorServiceInterface.getAllAuthorsPaged(userId, page, pageSize, sort, desc))
     }
 
     get("/api/author/{id}") {
