@@ -14,6 +14,7 @@ data class Book(
     val publisher: String,
     val quantity: Int,
     val image: String? = null,
+    val backImage: String? = null,
     val genreId: Long? = null,
     val rating: Int? = null,
     val status: String? = "OWNED",

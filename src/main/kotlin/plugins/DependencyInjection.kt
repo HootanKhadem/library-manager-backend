@@ -77,7 +77,7 @@ fun Application.configureDependencyInjection() {
         provide<UserPreferenceRepository> { PSQLUserPreferenceRepository() }
         provide<LoginServiceInterface> { LoginServiceImpl(userRepository = resolve(), jwtService = jwtService) }
         provide<AuthorServiceInterface> { AuthorServiceInterfaceImpl(authorRepository = resolve()) }
-        provide<BookServiceInterface> { BookServiceImpl(bookRepository = resolve(), authorService = resolve(), lendingRepository = resolve()) }
+        provide<BookServiceInterface> { BookServiceImpl(bookRepository = resolve(), authorService = resolve(), lendingRepository = resolve(), activityLogRepository = resolve()) }
         provide<GenreServiceInterface> { GenreServiceImpl(genreRepository = resolve()) }
         provide<MemberServiceInterface> { MemberServiceImpl(memberRepository = resolve()) }
         provide<LendingServiceInterface> { LendingServiceImpl(lendingRepository = resolve(), bookRepository = resolve(), activityLogRepository = resolve()) }

@@ -17,7 +17,8 @@ object BookTable : LongIdTable("book") {
     val publishedDate = varchar("published_date", 255)
     val publisher = varchar("publisher", 255)
     val quantity = integer("quantity")
-    val image = varchar("image", 255).nullable()
+    val image = text("image").nullable()
+    val backImage = text("back_image").nullable()
     val userId = long("user_id").nullable()
     val createdOn = varchar("created_on", 255).nullable()
     val createdBy = long("created_by").nullable()
@@ -40,6 +41,7 @@ class BookDAO(id: EntityID<Long>) : LongEntity(id) {
     var publisher by BookTable.publisher
     var quantity by BookTable.quantity
     var image by BookTable.image
+    var backImage by BookTable.backImage
     var userId by BookTable.userId
     var createdOn by BookTable.createdOn
     var createdBy by BookTable.createdBy
@@ -60,6 +62,7 @@ class BookDAO(id: EntityID<Long>) : LongEntity(id) {
         publisher = publisher,
         quantity = quantity,
         image = image,
+        backImage = backImage,
         genreId = genreId,
         rating = rating,
         status = status,
@@ -80,6 +83,7 @@ class BookDAO(id: EntityID<Long>) : LongEntity(id) {
         this.publisher = dto.publisher
         this.quantity = dto.quantity
         this.image = dto.image
+        this.backImage = dto.backImage
         this.genreId = dto.genreId
         this.rating = dto.rating
         this.status = dto.status

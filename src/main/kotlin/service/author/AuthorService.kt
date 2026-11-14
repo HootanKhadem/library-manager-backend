@@ -45,6 +45,7 @@ class AuthorServiceInterfaceImpl(
 
     override suspend fun getAllAuthorsPaged(userId: Long, page: Int, pageSize: Int): PagedResponse<Author> {
         val items = authorRepository.findAllByUserIdPaged(userId, page, pageSize)
+            .map { it.copy(bookCount = authorRepository.countBooks(it.id!!)) }
         val total = authorRepository.countByUserId(userId)
         return PagedResponse.of(items, page, pageSize, total)
     }

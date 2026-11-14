@@ -3,12 +3,14 @@ package com.dw.db.postgres.user
 import com.dw.db.AuthorRepository
 import com.dw.db.mapping.AuthorDAO
 import com.dw.db.mapping.AuthorTable
+import com.dw.db.mapping.BookTable
 import com.dw.db.withTransaction
 import com.dw.model.dto.Author
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.like
 import org.jetbrains.exposed.v1.core.lowerCase
+import org.jetbrains.exposed.v1.jdbc.selectAll
 
 class PSQLAuthorRepository : AuthorRepository {
     override suspend fun save(author: Author): Author = withTransaction {
@@ -38,6 +40,10 @@ class PSQLAuthorRepository : AuthorRepository {
             .limit(pageSize)
             .offset((page - 1).toLong() * pageSize)
             .map { it.toAuthorDto() }
+    }
+
+    override suspend fun countBooks(authorId: Long): Long = withTransaction {
+        BookTable.selectAll().where { BookTable.author eq authorId }.count()
     }
 
     override suspend fun countByUserId(userId: Long): Long = withTransaction {

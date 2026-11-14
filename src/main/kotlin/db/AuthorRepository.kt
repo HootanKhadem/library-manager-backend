@@ -8,5 +8,6 @@ interface AuthorRepository {
     suspend fun findByName(name: String): Author?
     suspend fun findById(id: Long): Author?
     suspend fun findAllByUserIdPaged(userId: Long, page: Int, pageSize: Int): List<Author>
+    suspend fun countBooks(authorId: Long): Long
     suspend fun countByUserId(userId: Long): Long
 }

@@ -33,6 +33,7 @@ class PSQLBookRepository : BookRepository {
             publisher = book.publisher
             quantity = book.quantity
             image = book.image
+            backImage = book.backImage
             status = book.status ?: "OWNED"
             userId = book.userId
             createdOn = book.createdOn ?: LocalDateTime.now().toString()
@@ -64,6 +65,12 @@ class PSQLBookRepository : BookRepository {
             .limit(pageSize)
             .offset((page - 1).toLong() * pageSize)
         BookDAO.wrapRows(query).map { it.toBookDto() }
+    }
+
+    override suspend fun findAllByAuthorId(userId: Long, authorId: Long): List<Book> = withTransaction {
+        BookDAO.find { (BookTable.userId eq userId) and (BookTable.author eq authorId) }
+            .orderBy(BookTable.id to SortOrder.ASC)
+            .map { it.toBookDto() }
     }
 
     override suspend fun update(id: Long, book: Book): Book? = withTransaction {
